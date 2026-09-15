@@ -22,6 +22,18 @@ jobs:
       - name: Test portable vault core
         run: cargo test --locked
 
+      - name: Compile the iPhone simulator app
+        run: |
+          chmod +x ios/scripts/build-rust-core.sh ios/scripts/package-unsigned-ipa.sh
+          xcodebuild build \
+            -project ios/NoirVault.xcodeproj \
+            -scheme NoirVault \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath ios/build/simulator \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_STYLE=Manual ARCHS=arm64
+
       - name: Build unsigned iPhone app
         run: |
           chmod +x ios/scripts/build-rust-core.sh ios/scripts/package-unsigned-ipa.sh
