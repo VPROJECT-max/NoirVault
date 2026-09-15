@@ -21,7 +21,7 @@ export component AppWindow inherits Window {
     
     in property <bool> unlocked: false;
     in property <string> status_message: "";
-    in property <string> keyfile_path: "No file selected";
+    in property <string> keyfile_path: "No keyfile selected (legacy vaults only)";
     
     in property <[VaultItemUI]> vault_items: [];
     in-out property <int> selected_index: -1;
@@ -103,10 +103,10 @@ export component AppWindow inherits Window {
 
             HorizontalBox {
                 spacing: 8px;
-                Text { text: "Keyfile:"; vertical-alignment: center; }
+                Text { text: "Legacy keyfile:"; vertical-alignment: center; }
                 Text { text: root.keyfile_path; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
                 Button {
-                    text: "Browse...";
+                    text: "Select (optional)...";
                     clicked => { root.select_keyfile(); }
                 }
             }

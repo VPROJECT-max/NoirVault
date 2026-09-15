@@ -6,6 +6,7 @@ pub struct SecureBuffer {
     ptr: NonNull<u8>,
     layout: Layout,
     exact_size: usize,
+    memory_locked: bool,
 }
 
 unsafe impl Send for SecureBuffer {}
@@ -15,7 +16,7 @@ impl SecureBuffer {
     pub fn new(size: usize) -> Self {
         if size == 0 {
             let layout = Layout::from_size_align(1, 1).unwrap();
-            return Self { ptr: NonNull::dangling(), layout, exact_size: 0 };
+            return Self { ptr: NonNull::dangling(), layout, exact_size: 0, memory_locked: false };
         }
         
         let ps = page_size();
@@ -24,11 +25,13 @@ impl SecureBuffer {
         
         let ptr = unsafe { NonNull::new(alloc(layout)).expect("Allocation failed") };
         
-        if !lock_memory(ptr.as_ptr(), layout.size()) {
+        let memory_locked = lock_memory(ptr.as_ptr(), layout.size());
+        #[cfg(not(target_os = "ios"))]
+        if !memory_locked {
             panic!("FATAL: Failed to lock secure memory. Aborting to prevent secrets from paging to disk.");
         }
         
-        Self { ptr, layout, exact_size: size }
+        Self { ptr, layout, exact_size: size, memory_locked }
     }
 
     pub fn from_slice(data: &[u8]) -> Self {
@@ -62,7 +65,9 @@ impl Drop for SecureBuffer {
                 full_slice.zeroize();
             }
             
-            unlock_memory(self.ptr.as_ptr(), self.layout.size());
+            if self.memory_locked {
+                unlock_memory(self.ptr.as_ptr(), self.layout.size());
+            }
             unsafe {
                 dealloc(self.ptr.as_ptr(), self.layout);
             }
@@ -78,7 +83,7 @@ fn page_size() -> usize {
     info.dwPageSize as usize
 }
 
-#[cfg(any(target_os = "linux", target_os = "ios"))]
+#[cfg(any(target_os = "linux", target_os = "ios", target_os = "macos"))]
 fn page_size() -> usize {
     unsafe { libc::sysconf(libc::_SC_PAGESIZE) as usize }
 }
@@ -95,7 +100,7 @@ fn unlock_memory(ptr: *mut u8, size: usize) {
     unsafe { VirtualUnlock(ptr as _, size); }
 }
 
-#[cfg(any(target_os = "linux", target_os = "ios"))]
+#[cfg(target_os = "linux")]
 fn lock_memory(ptr: *mut u8, size: usize) -> bool {
     use libc::{mlock, madvise, MADV_DONTDUMP};
     unsafe { 
@@ -107,7 +112,12 @@ fn lock_memory(ptr: *mut u8, size: usize) -> bool {
     }
 }
 
-#[cfg(any(target_os = "linux", target_os = "ios"))]
+#[cfg(any(target_os = "ios", target_os = "macos"))]
+fn lock_memory(ptr: *mut u8, size: usize) -> bool {
+    unsafe { libc::mlock(ptr as _, size) == 0 }
+}
+
+#[cfg(any(target_os = "linux", target_os = "ios", target_os = "macos"))]
 fn unlock_memory(ptr: *mut u8, size: usize) {
     use libc::munlock;
     unsafe {

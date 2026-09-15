@@ -2,6 +2,7 @@ use crate::crypto::{decrypt_v2, encrypt_v2};
 use std::cell::RefCell;
 use std::ffi::{c_char, CStr, CString};
 use std::ptr;
+use zeroize::Zeroize;
 
 thread_local! {
     static LAST_ERROR: RefCell<Option<CString>> = const { RefCell::new(None) };
@@ -43,6 +44,9 @@ unsafe fn password_from_ptr(password: *const c_char) -> Result<String, &'static 
 }
 
 unsafe fn bytes_from_ptr<'a>(data: *const u8, len: usize) -> Result<&'a [u8], &'static str> {
+    if len == 0 {
+        return Ok(&[]);
+    }
     if data.is_null() && len != 0 {
         return Err("Input data is missing.");
     }
@@ -99,6 +103,7 @@ pub unsafe extern "C" fn nv_decrypt_json(password: *const c_char, envelope: *con
 #[no_mangle]
 pub unsafe extern "C" fn nv_free_buffer(buffer: NvBuffer) {
     if !buffer.data.is_null() {
+        std::slice::from_raw_parts_mut(buffer.data, buffer.len).zeroize();
         drop(Vec::from_raw_parts(buffer.data, buffer.len, buffer.len));
     }
 }

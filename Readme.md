@@ -25,7 +25,7 @@ Use this software responsibly and understand that ultimate security relies heavi
 NoirVault is designed to be 100% portable. You can install it on any standard USB flash drive and run it completely offline across both **Windows and Linux** environments.
 
 1. **Launch**: Simply execute the `noirvault.exe` (or Linux binary) directly from your USB drive. No installation is required.
-2. **Unlock**: Select your Keyfile from your filesystem and type in your Master Password to decrypt the vault into RAM.
+2. **Unlock**: Type your Master Password to decrypt a portable v2 vault into RAM. Existing legacy vaults need their original keyfile once; the next save migrates them to the master-password-only portable format used by NoirVault for iPhone.
 3. **Navigate**: The app is heavily keyboard-driven. Press `Ctrl+K` to focus the search bar, use the `Up` and `Down` arrow keys to fly through your passwords, and hit `Enter` to instantly copy a password to your clipboard. For a full list, see our [Keyboard Shortcuts](Keyshorcuts.md) guide.
 4. **Auto-Type**: Alternatively, use the Auto-Type button to have the vault directly inject your password into your browser, bypassing the clipboard entirely.
 
@@ -51,6 +51,10 @@ NoirVault is designed to be 100% portable. You can install it on any standard US
 - **totp-rs**: A library implementing RFC 6238 to generate Time-Based One-Time Passwords completely offline, calculating the live 6-digit codes directly from your system clock.
 - **enigo**: A cross-platform library that handles the low-level API calls required to simulate physical keyboard input for the Auto-Type system.
 - **winres**: A build-time dependency used to compile Windows Resource files, allowing us to permanently embed custom `.ico` logos directly into the executable header.
+
+## iPhone build artifact
+
+The `IOS` branch includes a native iPhone app for iOS 26. The GitHub Actions workflow builds the shared Rust vault core on macOS, packages `NoirVault.app` as `NoirVault-unsigned.ipa`, and uploads the IPA plus its SHA-256 checksum as workflow artifacts. The app is intentionally unsigned; iOS installation and launch still require a valid signing path managed outside this repository.
 
 ## Directory Structure
 ```text

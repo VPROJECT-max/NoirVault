@@ -1,8 +1,5 @@
 slint::include_modules!();
 
-mod memory;
-mod crypto;
-mod vault;
 mod backup;
 
 use std::rc::Rc;
@@ -10,21 +7,20 @@ use std::cell::RefCell;
 use slint::{SharedString, Timer, TimerMode, VecModel, Model};
 use rfd::FileDialog;
 use std::fs;
-use crate::memory::SecureBuffer;
-use crate::vault::{VaultData, VaultItem};
+use noirvault::{crypto, memory};
+use noirvault::memory::SecureBuffer;
+use noirvault::vault::{VaultData, VaultItem};
 use base64::prelude::*;
-use rand::{rngs::OsRng, RngCore};
 use totp_rs::{TOTP, Secret, Algorithm};
 
 struct AppState {
-    master_key: Option<SecureBuffer>,
-    salt: [u8; 16],
+    master_password: Option<SecureBuffer>,
     vault_data: VaultData,
 }
 
 impl Drop for AppState {
     fn drop(&mut self) {
-        self.master_key = None;
+        self.master_password = None;
     }
 }
 
@@ -113,18 +109,18 @@ fn sync_ui_list(ui: &AppWindow, vault_data: &VaultData) {
 }
 
 fn save_vault_to_disk(state: &AppState) {
-    let key = match &state.master_key {
-        Some(k) => k,
+    let password = match &state.master_password {
+        Some(value) => value,
         None => return,
     };
+    let password = match std::str::from_utf8(password.as_slice()) {
+        Ok(value) => value,
+        Err(_) => return,
+    };
     let data_bytes = state.vault_data.to_bytes();
-    let encrypted = crypto::encrypt_data(&data_bytes, key);
-    
-    let mut file_contents = Vec::with_capacity(16 + encrypted.len());
-    file_contents.extend_from_slice(&state.salt);
-    file_contents.extend_from_slice(&encrypted);
-    
-    fs::write("vault.dat", file_contents).expect("Failed to write vault.dat");
+    let envelope = crypto::encrypt_v2(password, &data_bytes);
+
+    fs::write("vault.dat", envelope).expect("Failed to write vault.dat");
 }
 
 fn main() {
@@ -134,8 +130,7 @@ fn main() {
     let ui_handle = ui.as_weak();
     
     let state = Rc::new(RefCell::new(AppState { 
-        master_key: None,
-        salt: [0; 16],
+        master_password: None,
         vault_data: VaultData::new(),
     }));
     
@@ -155,53 +150,70 @@ fn main() {
         let state = state.clone();
         move |password| {
             let ui = ui_handle.upgrade().unwrap();
-            let keyfile_path = ui.get_keyfile_path().to_string();
-            
-            if keyfile_path == "No file selected" {
-                ui.set_status_message(SharedString::from("Please select a keyfile."));
-                return;
-            }
-
-            let keyfile_bytes = match fs::read(&keyfile_path) {
-                Ok(bytes) => bytes,
-                Err(_) => {
-                    ui.set_status_message(SharedString::from("Failed to read keyfile."));
-                    return;
-                }
-            };
-
             let mut current_state = state.borrow_mut();
-            
-            if let Ok(file_bytes) = fs::read("vault.dat") {
-                if file_bytes.len() < 16 + 24 + 16 { 
-                    ui.set_status_message(SharedString::from("vault.dat is corrupted (too small)."));
-                    return;
+            let password_buffer = SecureBuffer::from_slice(password.as_bytes());
+
+            match fs::read("vault.dat") {
+                Ok(file_bytes) if crypto::is_v2_envelope(&file_bytes) => {
+                    let decrypted = match crypto::decrypt_v2(&password, &file_bytes) {
+                        Ok(value) => value,
+                        Err(_) => {
+                            ui.set_status_message(SharedString::from("Invalid master password or corrupted vault."));
+                            return;
+                        }
+                    };
+                    match VaultData::from_bytes(decrypted.as_slice()) {
+                        Ok(value) => current_state.vault_data = value,
+                        Err(_) => {
+                            ui.set_status_message(SharedString::from("Failed to parse vault data."));
+                            return;
+                        }
+                    }
                 }
-                let mut salt = [0u8; 16];
-                salt.copy_from_slice(&file_bytes[..16]);
-                current_state.salt = salt;
-                
-                let key = crypto::derive_key(&password, &keyfile_bytes, &salt);
-                
-                let encrypted_payload = &file_bytes[16..];
-                if let Some(decrypted_buffer) = crypto::decrypt_data(encrypted_payload, &key) {
-                    if let Ok(vault_data) = VaultData::from_bytes(decrypted_buffer.as_slice()) {
-                        current_state.master_key = Some(key);
-                        current_state.vault_data = vault_data;
-                    } else {
-                        ui.set_status_message(SharedString::from("Failed to parse vault data."));
+                Ok(file_bytes) => {
+                    if file_bytes.len() < 16 + 24 + 16 {
+                        ui.set_status_message(SharedString::from("vault.dat is corrupted (too small)."));
                         return;
                     }
-                } else {
-                    ui.set_status_message(SharedString::from("Invalid password or keyfile."));
+                    let keyfile_path = ui.get_keyfile_path().to_string();
+                    if keyfile_path == "No keyfile selected (legacy vaults only)" {
+                        ui.set_status_message(SharedString::from("This legacy vault needs its keyfile once before it can migrate."));
+                        return;
+                    }
+                    let keyfile_bytes = match fs::read(keyfile_path) {
+                        Ok(value) => value,
+                        Err(_) => {
+                            ui.set_status_message(SharedString::from("Failed to read the legacy keyfile."));
+                            return;
+                        }
+                    };
+                    let mut salt = [0u8; 16];
+                    salt.copy_from_slice(&file_bytes[..16]);
+                    let legacy_key = crypto::derive_key(&password, &keyfile_bytes, &salt);
+                    let decrypted = match crypto::decrypt_data(&file_bytes[16..], &legacy_key) {
+                        Some(value) => value,
+                        None => {
+                            ui.set_status_message(SharedString::from("Invalid master password or legacy keyfile."));
+                            return;
+                        }
+                    };
+                    match VaultData::from_bytes(decrypted.as_slice()) {
+                        Ok(value) => current_state.vault_data = value,
+                        Err(_) => {
+                            ui.set_status_message(SharedString::from("Failed to parse vault data."));
+                            return;
+                        }
+                    }
+                }
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                    current_state.vault_data = VaultData::new();
+                }
+                Err(_) => {
+                    ui.set_status_message(SharedString::from("Unable to read vault.dat."));
                     return;
                 }
-            } else {
-                OsRng.fill_bytes(&mut current_state.salt);
-                let key = crypto::derive_key(&password, &keyfile_bytes, &current_state.salt);
-                current_state.master_key = Some(key);
-                current_state.vault_data = VaultData::new();
             }
+            current_state.master_password = Some(password_buffer);
             
             ui.set_status_message(SharedString::from(""));
             ui.set_unlocked(true);
@@ -224,7 +236,7 @@ fn main() {
         let state = state.clone();
         move || {
             let mut s = state.borrow_mut();
-            s.master_key = None;
+            s.master_password = None;
             s.vault_data = VaultData::new();
             let _ = slint::quit_event_loop();
         }
@@ -465,7 +477,7 @@ fn main() {
         if let Ok(exe_path) = std::env::current_exe() {
             if !exe_path.exists() {
                 let mut s = state_for_extract.borrow_mut();
-                s.master_key = None;
+                s.master_password = None;
                 s.vault_data = VaultData::new();
                 std::process::abort();
             }
