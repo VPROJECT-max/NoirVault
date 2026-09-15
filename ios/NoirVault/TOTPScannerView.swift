@@ -14,7 +14,7 @@ struct TOTPScannerView: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: ScannerViewController, context: Context) {}
 }
 
-final class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDelegate {
+final class ScannerViewController: UIViewController, @preconcurrency AVCaptureMetadataOutputObjectsDelegate {
     var onResult: ((Result<String, Error>) -> Void)?
     private let session = AVCaptureSession()
     private var finished = false
