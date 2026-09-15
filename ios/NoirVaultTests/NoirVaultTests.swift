@@ -54,6 +54,20 @@ final class NoirVaultTests: XCTestCase {
         XCTAssertEqual(selectedScope, .privateToApp)
     }
 
+    func testMissingVaultFileRoutesLaunchToSetup() {
+        XCTAssertEqual(
+            VaultLaunchPolicy.route(hasStoredPairing: true, probeError: .vaultMissing),
+            .setupRequired
+        )
+    }
+
+    func testDisconnectedUSBKeepsExistingPairing() {
+        XCTAssertEqual(
+            VaultLaunchPolicy.route(hasStoredPairing: true, probeError: .usbUnavailable),
+            .unlockRequired
+        )
+    }
+
     func testSHA1RFC6238VectorAt59Seconds() throws {
         let configuration = try TOTPConfiguration.parse("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ").with(digits: 8)
         XCTAssertEqual(TOTPGenerator.code(configuration: configuration, at: Date(timeIntervalSince1970: 59)), "94287082")
