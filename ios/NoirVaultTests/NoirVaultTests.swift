@@ -1,5 +1,6 @@
 import XCTest
 import CryptoKit
+import Security
 @testable import NoirVault
 
 final class NoirVaultTests: XCTestCase {
@@ -39,6 +40,18 @@ final class NoirVaultTests: XCTestCase {
     func testPairingMarkerRejectsAnUnexpectedSecret() throws {
         let marker = PairingMarker(vaultID: UUID(), verifier: Data(repeating: 1, count: 32))
         XCTAssertFalse(marker.matches(secret: Data(repeating: 2, count: 32)))
+    }
+
+    func testMissingSharedEntitlementFallsBackToPrivateKeychain() throws {
+        var attemptedScopes: [SharedKeychain.StorageScope] = []
+
+        let selectedScope = try SharedKeychain.performWriteWithFallback { scope in
+            attemptedScopes.append(scope)
+            return scope == .sharedWithExtension ? errSecMissingEntitlement : errSecSuccess
+        }
+
+        XCTAssertEqual(attemptedScopes, [.sharedWithExtension, .privateToApp])
+        XCTAssertEqual(selectedScope, .privateToApp)
     }
 
     func testSHA1RFC6238VectorAt59Seconds() throws {
