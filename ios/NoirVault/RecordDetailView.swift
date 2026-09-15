@@ -74,6 +74,14 @@ struct RecordDetailView: View {
                         .foregroundStyle(NoirTheme.violet)
                 }
 
+                if let configuration = item.totpConfiguration {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("ROTATING CODE").font(.caption.bold()).foregroundStyle(NoirTheme.muted)
+                        TOTPCodeView(configuration: configuration)
+                    }
+                    .noirCard()
+                }
+
                 Button(role: .destructive) { showingDeleteConfirmation = true } label: {
                     Label("Delete item", systemImage: "trash")
                         .frame(maxWidth: .infinity)

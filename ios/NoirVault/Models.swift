@@ -6,6 +6,7 @@ enum VaultItemType: String, Codable, CaseIterable, Identifiable {
     case note
     case file
     case sshKey = "ssh_key"
+    case passkey
 
     var id: String { rawValue }
     var title: String {
@@ -14,6 +15,7 @@ enum VaultItemType: String, Codable, CaseIterable, Identifiable {
         case .note: "Secure Note"
         case .file: "Encrypted File"
         case .sshKey: "SSH Key"
+        case .passkey: "Passkey"
         }
     }
 
@@ -23,6 +25,7 @@ enum VaultItemType: String, Codable, CaseIterable, Identifiable {
         case .note: "note.text"
         case .file: "doc.fill"
         case .sshKey: "terminal.fill"
+        case .passkey: "person.badge.key.fill"
         }
     }
 }
@@ -59,6 +62,11 @@ struct VaultItem: Codable, Identifiable, Equatable, Hashable {
         self.itemType = itemType
         self.content = content
     }
+}
+
+extension VaultItem {
+    var hasTOTP: Bool { (try? TOTPConfiguration.parse(totpSecret)) != nil }
+    var totpConfiguration: TOTPConfiguration? { try? TOTPConfiguration.parse(totpSecret) }
 }
 
 struct VaultData: Codable, Equatable {

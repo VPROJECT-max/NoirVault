@@ -18,11 +18,36 @@
 		A1000000000000000000000A /* RecordEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000A /* RecordEditorView.swift */; };
 		A1000000000000000000000C /* NoirVaultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000C /* NoirVaultTests.swift */; };
 		A1000000000000000000000D /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000E /* XCTest.framework */; };
+		B10000000000000000000001 /* SharedKeychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* SharedKeychain.swift */; };
+		B10000000000000000000002 /* TOTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* TOTP.swift */; };
+		B10000000000000000000003 /* TOTPScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* TOTPScannerView.swift */; };
+		B10000000000000000000004 /* TOTPCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000004 /* TOTPCodeView.swift */; };
+		B10000000000000000000005 /* WebAuthn.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000005 /* WebAuthn.swift */; };
+		B10000000000000000000006 /* CredentialIdentityIndexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000006 /* CredentialIdentityIndexer.swift */; };
+		B10000000000000000000007 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000007 /* Assets.xcassets */; };
+		B10000000000000000000010 /* CredentialProviderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000010 /* CredentialProviderViewController.swift */; };
+		B10000000000000000000011 /* CredentialProviderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000011 /* CredentialProviderView.swift */; };
+		B10000000000000000000012 /* Models.swift in Provider Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* Models.swift */; };
+		B10000000000000000000013 /* VaultCore.swift in Provider Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* VaultCore.swift */; };
+		B10000000000000000000014 /* VaultStore.swift in Provider Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* VaultStore.swift */; };
+		B10000000000000000000015 /* SharedKeychain.swift in Provider Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* SharedKeychain.swift */; };
+		B10000000000000000000016 /* TOTP.swift in Provider Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* TOTP.swift */; };
+		B10000000000000000000017 /* WebAuthn.swift in Provider Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000005 /* WebAuthn.swift */; };
+		B10000000000000000000018 /* CredentialIdentityIndexer.swift in Provider Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000006 /* CredentialIdentityIndexer.swift */; };
+		B10000000000000000000019 /* NoirTheme.swift in Provider Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* NoirTheme.swift */; };
+		B10000000000000000000020 /* NoirVaultCredentialProvider.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = B20000000000000000000014 /* NoirVaultCredentialProvider.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
 		A30000000000000000000001 /* PBXContainerItemProxy */ = {isa = PBXContainerItemProxy; containerPortal = A40000000000000000000001 /* Project object */; proxyType = 1; remoteGlobalIDString = A50000000000000000000001; remoteInfo = NoirVault; };
+		B30000000000000000000001 /* Provider proxy */ = {isa = PBXContainerItemProxy; containerPortal = A40000000000000000000001 /* Project object */; proxyType = 1; remoteGlobalIDString = B50000000000000000000001; remoteInfo = NoirVaultCredentialProvider; };
+		B30000000000000000000002 /* RustCore proxy for app */ = {isa = PBXContainerItemProxy; containerPortal = A40000000000000000000001 /* Project object */; proxyType = 1; remoteGlobalIDString = B50000000000000000000002; remoteInfo = RustCore; };
+		B30000000000000000000003 /* RustCore proxy for provider */ = {isa = PBXContainerItemProxy; containerPortal = A40000000000000000000001 /* Project object */; proxyType = 1; remoteGlobalIDString = B50000000000000000000002; remoteInfo = RustCore; };
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B60000000000000000000003 /* Embed App Extensions */ = {isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = (B10000000000000000000020 /* NoirVaultCredentialProvider.appex in Embed App Extensions */); name = "Embed App Extensions"; runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		A20000000000000000000001 /* NoirVaultApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoirVaultApp.swift; sourceTree = "<group>"; };
@@ -40,27 +65,47 @@
 		A2000000000000000000000D /* NoirVault.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NoirVault.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000000000000000000000E /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 		A2000000000000000000000F /* NoirVaultTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NoirVaultTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B20000000000000000000001 /* SharedKeychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedKeychain.swift; sourceTree = "<group>"; };
+		B20000000000000000000002 /* TOTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TOTP.swift; sourceTree = "<group>"; };
+		B20000000000000000000003 /* TOTPScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TOTPScannerView.swift; sourceTree = "<group>"; };
+		B20000000000000000000004 /* TOTPCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TOTPCodeView.swift; sourceTree = "<group>"; };
+		B20000000000000000000005 /* WebAuthn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebAuthn.swift; sourceTree = "<group>"; };
+		B20000000000000000000006 /* CredentialIdentityIndexer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialIdentityIndexer.swift; sourceTree = "<group>"; };
+		B20000000000000000000007 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B20000000000000000000008 /* NoirVault.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NoirVault.entitlements; sourceTree = "<group>"; };
+		B20000000000000000000010 /* CredentialProviderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialProviderViewController.swift; sourceTree = "<group>"; };
+		B20000000000000000000011 /* CredentialProviderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialProviderView.swift; sourceTree = "<group>"; };
+		B20000000000000000000012 /* Provider Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B20000000000000000000013 /* Provider entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NoirVaultCredentialProvider.entitlements; sourceTree = "<group>"; };
+		B20000000000000000000014 /* NoirVaultCredentialProvider.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NoirVaultCredentialProvider.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A60000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		A60000000000000000000002 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A1000000000000000000000D /* XCTest.framework in Frameworks */); runOnlyForDeploymentPostprocessing = 0; };
+		B60000000000000000000001 /* Provider Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		A70000000000000000000001 = {isa = PBXGroup; children = (A70000000000000000000002 /* NoirVault */, A70000000000000000000003 /* NoirVaultTests */, A70000000000000000000004 /* Products */); sourceTree = "<group>"; };
-		A70000000000000000000002 /* NoirVault */ = {isa = PBXGroup; children = (A20000000000000000000001, A20000000000000000000002, A20000000000000000000003, A20000000000000000000004, A20000000000000000000005, A20000000000000000000006, A20000000000000000000007, A20000000000000000000008, A20000000000000000000009, A2000000000000000000000A, A2000000000000000000000B); path = NoirVault; sourceTree = "<group>"; };
+		A70000000000000000000001 = {isa = PBXGroup; children = (A70000000000000000000002 /* NoirVault */, B70000000000000000000001 /* NoirVaultCredentialProvider */, A70000000000000000000003 /* NoirVaultTests */, A70000000000000000000004 /* Products */); sourceTree = "<group>"; };
+		A70000000000000000000002 /* NoirVault */ = {isa = PBXGroup; children = (A20000000000000000000001, A20000000000000000000002, A20000000000000000000003, A20000000000000000000004, A20000000000000000000005, B20000000000000000000001, B20000000000000000000002, B20000000000000000000003, B20000000000000000000004, B20000000000000000000005, B20000000000000000000006, A20000000000000000000006, A20000000000000000000007, A20000000000000000000008, A20000000000000000000009, A2000000000000000000000A, B20000000000000000000007, B20000000000000000000008, A2000000000000000000000B); path = NoirVault; sourceTree = "<group>"; };
 		A70000000000000000000003 /* NoirVaultTests */ = {isa = PBXGroup; children = (A2000000000000000000000C); path = NoirVaultTests; sourceTree = "<group>"; };
-		A70000000000000000000004 /* Products */ = {isa = PBXGroup; children = (A2000000000000000000000D, A2000000000000000000000F); name = Products; sourceTree = "<group>"; };
+		A70000000000000000000004 /* Products */ = {isa = PBXGroup; children = (A2000000000000000000000D, A2000000000000000000000F, B20000000000000000000014); name = Products; sourceTree = "<group>"; };
+		B70000000000000000000001 /* NoirVaultCredentialProvider */ = {isa = PBXGroup; children = (B20000000000000000000010, B20000000000000000000011, B20000000000000000000012, B20000000000000000000013); path = NoirVaultCredentialProvider; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
+/* Begin PBXAggregateTarget section */
+		B50000000000000000000002 /* RustCore */ = {isa = PBXAggregateTarget; buildConfigurationList = B80000000000000000000002; buildPhases = (AB00000000000000000000001); buildRules = (); dependencies = (); name = RustCore; productName = RustCore; };
+/* End PBXAggregateTarget section */
+
 /* Begin PBXNativeTarget section */
-		A50000000000000000000001 /* NoirVault */ = {isa = PBXNativeTarget; buildConfigurationList = A80000000000000000000001; buildPhases = (A60000000000000000000001, AB00000000000000000000001, A90000000000000000000001, AA00000000000000000000001); buildRules = (); dependencies = (); name = NoirVault; productName = NoirVault; productReference = A2000000000000000000000D; productType = "com.apple.product-type.application"; };
+		A50000000000000000000001 /* NoirVault */ = {isa = PBXNativeTarget; buildConfigurationList = A80000000000000000000001; buildPhases = (A60000000000000000000001, A90000000000000000000001, AA00000000000000000000001, B60000000000000000000003); buildRules = (); dependencies = (B90000000000000000000001, B90000000000000000000002); name = NoirVault; productName = NoirVault; productReference = A2000000000000000000000D; productType = "com.apple.product-type.application"; };
 		A50000000000000000000002 /* NoirVaultTests */ = {isa = PBXNativeTarget; buildConfigurationList = A80000000000000000000002; buildPhases = (A60000000000000000000002, A90000000000000000000002); buildRules = (); dependencies = (AC00000000000000000000001); name = NoirVaultTests; productName = NoirVaultTests; productReference = A2000000000000000000000F; productType = "com.apple.product-type.bundle.unit-test"; };
+		B50000000000000000000001 /* NoirVaultCredentialProvider */ = {isa = PBXNativeTarget; buildConfigurationList = B80000000000000000000001; buildPhases = (B60000000000000000000001, B90000000000000000000010, B60000000000000000000002); buildRules = (); dependencies = (B90000000000000000000003); name = NoirVaultCredentialProvider; productName = NoirVaultCredentialProvider; productReference = B20000000000000000000014; productType = "com.apple.product-type.app-extension"; };
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		A40000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = { LastSwiftUpdateCheck = 1600; LastUpgradeCheck = 1600; TargetAttributes = { A50000000000000000000001 = { CreatedOnToolsVersion = 16.0; }; }; }; buildConfigurationList = A80000000000000000000003; compatibilityVersion = "Xcode 16.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = A70000000000000000000001; productRefGroup = A70000000000000000000004; projectDirPath = ""; projectRoot = ""; targets = (A50000000000000000000001, A50000000000000000000002); };
+		A40000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = { LastSwiftUpdateCheck = 1600; LastUpgradeCheck = 1600; TargetAttributes = { A50000000000000000000001 = { CreatedOnToolsVersion = 16.0; }; B50000000000000000000001 = { CreatedOnToolsVersion = 16.0; }; }; }; buildConfigurationList = A80000000000000000000003; compatibilityVersion = "Xcode 16.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = A70000000000000000000001; productRefGroup = A70000000000000000000004; projectDirPath = ""; projectRoot = ""; targets = (B50000000000000000000002, B50000000000000000000001, A50000000000000000000001, A50000000000000000000002); };
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
@@ -68,33 +113,44 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A90000000000000000000001 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001, A10000000000000000000002, A10000000000000000000003, A10000000000000000000004, A10000000000000000000005, A10000000000000000000006, A10000000000000000000007, A10000000000000000000008, A10000000000000000000009, A1000000000000000000000A); runOnlyForDeploymentPostprocessing = 0; };
+		A90000000000000000000001 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001, A10000000000000000000002, A10000000000000000000003, A10000000000000000000004, A10000000000000000000005, B10000000000000000000001, B10000000000000000000002, B10000000000000000000003, B10000000000000000000004, B10000000000000000000005, B10000000000000000000006, A10000000000000000000006, A10000000000000000000007, A10000000000000000000008, A10000000000000000000009, A1000000000000000000000A); runOnlyForDeploymentPostprocessing = 0; };
 		A90000000000000000000002 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A1000000000000000000000C); runOnlyForDeploymentPostprocessing = 0; };
+		B90000000000000000000010 /* Provider Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B10000000000000000000010, B10000000000000000000011, B10000000000000000000012, B10000000000000000000013, B10000000000000000000014, B10000000000000000000015, B10000000000000000000016, B10000000000000000000017, B10000000000000000000018, B10000000000000000000019); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXResourcesBuildPhase section */
-		AA00000000000000000000001 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		AA00000000000000000000001 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (B10000000000000000000007); runOnlyForDeploymentPostprocessing = 0; };
+		B60000000000000000000002 /* Provider Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
 		AC00000000000000000000001 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = A50000000000000000000001; targetProxy = A30000000000000000000001; };
+		B90000000000000000000001 /* App depends on Provider */ = {isa = PBXTargetDependency; target = B50000000000000000000001; targetProxy = B30000000000000000000001; };
+		B90000000000000000000002 /* App depends on RustCore */ = {isa = PBXTargetDependency; target = B50000000000000000000002; targetProxy = B30000000000000000000002; };
+		B90000000000000000000003 /* Provider depends on RustCore */ = {isa = PBXTargetDependency; target = B50000000000000000000002; targetProxy = B30000000000000000000003; };
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		AD00000000000000000000001 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_CXX_LANGUAGE_STANDARD = "gnu++20"; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES; DEBUG_INFORMATION_FORMAT = dwarf; GCC_C_LANGUAGE_STANDARD = gnu17; SDKROOT = iphoneos; SWIFT_VERSION = 6.0; }; name = Debug; };
 		AD00000000000000000000002 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_CXX_LANGUAGE_STANDARD = "gnu++20"; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; GCC_C_LANGUAGE_STANDARD = gnu17; SDKROOT = iphoneos; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; SWIFT_VERSION = 6.0; }; name = Release; };
-		AD00000000000000000000003 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; CODE_SIGN_STYLE = Manual; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; INFOPLIST_FILE = NoirVault/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 26.0; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; OTHER_LDFLAGS = "$(inherited) $(SRCROOT)/build/rust/$(PLATFORM_NAME)/libnoirvault.a"; PRODUCT_BUNDLE_IDENTIFIER = com.Tokyo.noirvault; PRODUCT_NAME = NoirVault; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1; }; name = Debug; };
-		AD00000000000000000000004 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; CODE_SIGN_STYLE = Manual; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; INFOPLIST_FILE = NoirVault/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 26.0; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; OTHER_LDFLAGS = "$(inherited) $(SRCROOT)/build/rust/$(PLATFORM_NAME)/libnoirvault.a"; PRODUCT_BUNDLE_IDENTIFIER = com.Tokyo.noirvault; PRODUCT_NAME = NoirVault; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1; }; name = Release; };
+		AD00000000000000000000003 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_ENTITLEMENTS = NoirVault/NoirVault.entitlements; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; CODE_SIGN_STYLE = Manual; CURRENT_PROJECT_VERSION = 2; DEVELOPMENT_TEAM = ""; INFOPLIST_FILE = NoirVault/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 26.0; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; MARKETING_VERSION = 2.0; OTHER_LDFLAGS = "$(inherited) $(SRCROOT)/build/rust/$(PLATFORM_NAME)/libnoirvault.a"; PRODUCT_BUNDLE_IDENTIFIER = com.Tokyo.noirvault; PRODUCT_NAME = NoirVault; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1; }; name = Debug; };
+		AD00000000000000000000004 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_ENTITLEMENTS = NoirVault/NoirVault.entitlements; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; CODE_SIGN_STYLE = Manual; CURRENT_PROJECT_VERSION = 2; DEVELOPMENT_TEAM = ""; INFOPLIST_FILE = NoirVault/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 26.0; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; MARKETING_VERSION = 2.0; OTHER_LDFLAGS = "$(inherited) $(SRCROOT)/build/rust/$(PLATFORM_NAME)/libnoirvault.a"; PRODUCT_BUNDLE_IDENTIFIER = com.Tokyo.noirvault; PRODUCT_NAME = NoirVault; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1; }; name = Release; };
 		AD00000000000000000000005 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 26.0; PRODUCT_BUNDLE_IDENTIFIER = com.Tokyo.noirvault.tests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 6.0; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NoirVault.app/NoirVault"; }; name = Debug; };
 		AD00000000000000000000006 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 26.0; PRODUCT_BUNDLE_IDENTIFIER = com.Tokyo.noirvault.tests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 6.0; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NoirVault.app/NoirVault"; }; name = Release; };
 		AD00000000000000000000007 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; IPHONEOS_DEPLOYMENT_TARGET = 26.0; SDKROOT = iphoneos; }; name = Debug; };
 		AD00000000000000000000008 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; IPHONEOS_DEPLOYMENT_TARGET = 26.0; SDKROOT = iphoneos; }; name = Release; };
+		BD00000000000000000000001 /* Provider Debug */ = {isa = XCBuildConfiguration; buildSettings = { APPLICATION_EXTENSION_API_ONLY = YES; CODE_SIGN_ENTITLEMENTS = NoirVaultCredentialProvider/NoirVaultCredentialProvider.entitlements; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; CODE_SIGN_STYLE = Manual; CURRENT_PROJECT_VERSION = 2; DEVELOPMENT_TEAM = ""; INFOPLIST_FILE = NoirVaultCredentialProvider/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 26.0; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"; MARKETING_VERSION = 2.0; OTHER_LDFLAGS = "$(inherited) $(SRCROOT)/build/rust/$(PLATFORM_NAME)/libnoirvault.a"; PRODUCT_BUNDLE_IDENTIFIER = "com.Tokyo.noirvault.credential-provider"; PRODUCT_NAME = NoirVaultCredentialProvider; SDKROOT = iphoneos; SKIP_INSTALL = YES; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1; }; name = Debug; };
+		BD00000000000000000000002 /* Provider Release */ = {isa = XCBuildConfiguration; buildSettings = { APPLICATION_EXTENSION_API_ONLY = YES; CODE_SIGN_ENTITLEMENTS = NoirVaultCredentialProvider/NoirVaultCredentialProvider.entitlements; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; CODE_SIGN_STYLE = Manual; CURRENT_PROJECT_VERSION = 2; DEVELOPMENT_TEAM = ""; INFOPLIST_FILE = NoirVaultCredentialProvider/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 26.0; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"; MARKETING_VERSION = 2.0; OTHER_LDFLAGS = "$(inherited) $(SRCROOT)/build/rust/$(PLATFORM_NAME)/libnoirvault.a"; PRODUCT_BUNDLE_IDENTIFIER = "com.Tokyo.noirvault.credential-provider"; PRODUCT_NAME = NoirVaultCredentialProvider; SDKROOT = iphoneos; SKIP_INSTALL = YES; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1; }; name = Release; };
+		BD00000000000000000000003 /* RustCore Debug */ = {isa = XCBuildConfiguration; buildSettings = { IPHONEOS_DEPLOYMENT_TARGET = 26.0; SDKROOT = iphoneos; }; name = Debug; };
+		BD00000000000000000000004 /* RustCore Release */ = {isa = XCBuildConfiguration; buildSettings = { IPHONEOS_DEPLOYMENT_TARGET = 26.0; SDKROOT = iphoneos; }; name = Release; };
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
 		A80000000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (AD00000000000000000000003, AD00000000000000000000004); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 		A80000000000000000000002 = {isa = XCConfigurationList; buildConfigurations = (AD00000000000000000000005, AD00000000000000000000006); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
 		A80000000000000000000003 = {isa = XCConfigurationList; buildConfigurations = (AD00000000000000000000007, AD00000000000000000000008); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		B80000000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (BD00000000000000000000001, BD00000000000000000000002); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		B80000000000000000000002 = {isa = XCConfigurationList; buildConfigurations = (BD00000000000000000000003, BD00000000000000000000004); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 /* End XCConfigurationList section */
 	};
 	rootObject = A40000000000000000000001 /* Project object */;

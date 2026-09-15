@@ -11,12 +11,14 @@ struct VaultHomeView: View {
     @State private var showingEditor = false
     @State private var editorType = VaultItemType.password
     @State private var showingSettings = false
+    @State private var codesOnly = false
 
     private var filteredItems: [VaultItem] {
         session.data.items.filter { item in
             let matchesCategory = category == nil || category == item.itemType
+            let matchesCodes = !codesOnly || item.hasTOTP
             let haystack = [item.title, item.description, item.tags.joined(separator: " ")].joined(separator: " ").lowercased()
-            return matchesCategory && (query.isEmpty || haystack.contains(query.lowercased()))
+            return matchesCategory && matchesCodes && (query.isEmpty || haystack.contains(query.lowercased()))
         }
     }
 
@@ -27,6 +29,7 @@ struct VaultHomeView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 10) {
                             FilterChip(title: "All", symbol: "square.grid.2x2", selected: category == nil) { category = nil }
+                            FilterChip(title: "Codes", symbol: "timer", selected: codesOnly) { codesOnly.toggle() }
                             ForEach(VaultItemType.allCases) { type in
                                 FilterChip(title: type.title, symbol: type.symbol, selected: category == type) { category = type }
                             }
@@ -42,9 +45,15 @@ struct VaultHomeView: View {
                             .listRowBackground(Color.clear)
                     }
                     ForEach(filteredItems) { item in
-                        NavigationLink(value: item) {
+                        Button {
+                            session.select(item)
+                            UISelectionFeedbackGenerator().selectionChanged()
+                        } label: {
                             VaultRow(item: item)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
                         }
+                        .buttonStyle(VaultRowButtonStyle())
                         .swipeActions(edge: .trailing) {
                             Button(role: .destructive) {
                                 session.delete(item)
@@ -84,7 +93,10 @@ struct VaultHomeView: View {
                     }
                 }
             }
-            .navigationDestination(for: VaultItem.self) { item in
+            .navigationDestination(item: Binding(
+                get: { session.selectedItem },
+                set: { if $0 == nil { session.selectedItemID = nil } }
+            )) { item in
                 RecordDetailView(item: item, onDelete: {
                     session.delete(item)
                     save()
@@ -177,8 +189,18 @@ private struct VaultRow: View {
                     .foregroundStyle(NoirTheme.muted)
             }
             Spacer()
+            if item.hasTOTP { Image(systemName: "timer").foregroundStyle(NoirTheme.mint) }
             if !item.tags.isEmpty { Text(item.tags.first ?? "").font(.caption).foregroundStyle(NoirTheme.violet) }
         }
         .padding(.vertical, 5)
+    }
+}
+
+private struct VaultRowButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.985 : 1)
+            .opacity(configuration.isPressed ? 0.72 : 1)
+            .animation(.snappy(duration: 0.18), value: configuration.isPressed)
     }
 }

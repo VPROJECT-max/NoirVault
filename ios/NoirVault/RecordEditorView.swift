@@ -11,6 +11,8 @@ struct RecordEditorView: View {
     @State private var tags = ""
     @State private var showingFileImporter = false
     @State private var errorMessage: String?
+    @State private var totpSecret = ""
+    @State private var showingScanner = false
 
     var body: some View {
         NavigationStack {
@@ -47,6 +49,15 @@ struct RecordEditorView: View {
                         }
                     }
                 }
+
+                if type == .password {
+                    Section("Rotating code (optional)") {
+                        TextField("Base32 secret or otpauth:// URI", text: $totpSecret)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                        Button("Scan QR code", systemImage: "qrcode.viewfinder") { showingScanner = true }
+                    }
+                }
             }
             .scrollContentBackground(.hidden)
             .background(NoirTheme.ink)
@@ -67,6 +78,23 @@ struct RecordEditorView: View {
             .alert("Unable to add file", isPresented: Binding(
                 get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
             )) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "") }
+            .sheet(isPresented: $showingScanner) {
+                ZStack(alignment: .topTrailing) {
+                    TOTPScannerView { result in
+                        switch result {
+                        case .success(let value):
+                            if (try? TOTPConfiguration.parse(value)) != nil {
+                                totpSecret = value
+                                showingScanner = false
+                            } else { errorMessage = TOTPError.invalidSecret.localizedDescription }
+                        case .failure(let error): errorMessage = error.localizedDescription
+                        }
+                    }
+                    Button("Close", systemImage: "xmark.circle.fill") { showingScanner = false }
+                        .labelStyle(.iconOnly).font(.title).padding()
+                }
+                .ignoresSafeArea()
+            }
         }
     }
 
@@ -88,9 +116,15 @@ struct RecordEditorView: View {
     }
 
     private func save() {
+        if !totpSecret.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+           (try? TOTPConfiguration.parse(totpSecret)) == nil {
+            errorMessage = TOTPError.invalidSecret.localizedDescription
+            return
+        }
         let item = VaultItem(
             title: title.trimmingCharacters(in: .whitespacesAndNewlines),
             description: username.trimmingCharacters(in: .whitespacesAndNewlines),
+            totpSecret: totpSecret.trimmingCharacters(in: .whitespacesAndNewlines),
             tags: tags.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty },
             itemType: type,
             content: secret

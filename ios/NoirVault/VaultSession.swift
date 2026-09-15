@@ -8,25 +8,26 @@ final class VaultSession: ObservableObject {
     @Published var selectedItemID: String?
     @Published var requireBiometricsToCopy = false
     @Published var autoLockSeconds = 60
-    private var masterPassword: String?
+    private var unlocked: UnlockedVault?
     private var lastInteraction = Date()
 
-    init(data: VaultData = VaultData(), masterPassword: String? = nil) {
-        self.data = data
-        self.masterPassword = masterPassword
-        isLocked = masterPassword == nil
+    init(data: VaultData = VaultData(), masterPassword: String? = nil, unlocked: UnlockedVault? = nil) {
+        self.data = unlocked?.data ?? data
+        self.unlocked = unlocked
+        isLocked = unlocked == nil
         lastInteraction = Date()
     }
 
-    func unlock(data: VaultData, masterPassword: String) {
-        self.data = data
-        self.masterPassword = masterPassword
+    func unlock(_ unlocked: UnlockedVault) {
+        self.data = unlocked.data
+        self.unlocked = unlocked
         isLocked = false
         lastInteraction = Date()
+        Task { try? await CredentialIdentityIndexer.replaceAll(with: unlocked.data) }
     }
 
     func lock() {
-        masterPassword = nil
+        unlocked = nil
         selectedItemID = nil
         data = VaultData()
         isLocked = true
@@ -45,8 +46,9 @@ final class VaultSession: ObservableObject {
     }
 
     func save(using store: VaultStore) throws {
-        guard let masterPassword else { throw VaultStoreError.locked }
-        try store.save(data, masterPassword: masterPassword)
+        guard let unlocked else { throw VaultStoreError.locked }
+        self.unlocked = try store.save(data, using: unlocked)
+        Task { try? await CredentialIdentityIndexer.replaceAll(with: data) }
     }
 
     func add(_ item: VaultItem) {
@@ -62,4 +64,14 @@ final class VaultSession: ObservableObject {
         data.items.removeAll { $0.id == item.id }
         if selectedItemID == item.id { selectedItemID = nil }
     }
+
+    func select(_ item: VaultItem) {
+        selectedItemID = item.id
+    }
+
+    var selectedItem: VaultItem? {
+        data.items.first { $0.id == selectedItemID }
+    }
+
+    var debugHasDerivedKey: Bool { unlocked?.key.isEmpty == false }
 }

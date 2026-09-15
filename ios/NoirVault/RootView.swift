@@ -103,8 +103,8 @@ private struct USBSetupView: View {
             USBFolderPicker { directory in
                 do {
                     try store.pair(with: directory)
-                    let data = try store.create(masterPassword: masterPassword)
-                    session.unlock(data: data, masterPassword: masterPassword)
+                    let unlocked = try store.create(masterPassword: masterPassword)
+                    session.unlock(unlocked)
                     masterPassword = ""
                     confirmation = ""
                 } catch {
@@ -154,8 +154,8 @@ private struct UnlockView: View {
         isUnlocking = true
         defer { isUnlocking = false }
         do {
-            let data = try store.load(masterPassword: masterPassword)
-            session.unlock(data: data, masterPassword: masterPassword)
+            let unlocked = try store.load(masterPassword: masterPassword)
+            session.unlock(unlocked)
             masterPassword = ""
         } catch {
             session.lock()

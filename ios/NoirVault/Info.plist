@@ -19,11 +19,19 @@
     <key>CFBundleShortVersionString</key>
     <string>1.0</string>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>2</string>
+    <key>ASCredentialProviderExtensionCapabilities</key>
+    <dict>
+        <key>ProvidesPasskeys</key><true/>
+        <key>ProvidesPasswords</key><true/>
+        <key>ProvidesOneTimeCodes</key><true/>
+    </dict>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>UILaunchScreen</key>
     <dict/>
+    <key>NSCameraUsageDescription</key>
+    <string>Scan an authenticator QR code directly into your encrypted USB vault.</string>
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>

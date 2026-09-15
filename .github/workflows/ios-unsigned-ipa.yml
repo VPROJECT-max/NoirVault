@@ -34,6 +34,18 @@ jobs:
             -derivedDataPath ios/build/simulator \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_STYLE=Manual ARCHS=arm64
 
+      - name: Run iOS unit tests
+        run: |
+          DEVICE_ID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {print $2; exit}')"
+          test -n "$DEVICE_ID"
+          xcodebuild test \
+            -project ios/NoirVault.xcodeproj \
+            -scheme NoirVault \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,id=$DEVICE_ID" \
+            -derivedDataPath ios/build/tests \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_STYLE=Manual
+
       - name: Build unsigned iPhone app
         run: |
           chmod +x ios/scripts/build-rust-core.sh ios/scripts/package-unsigned-ipa.sh
@@ -50,8 +62,12 @@ jobs:
         run: |
           APP_PATH="$(find ios/build/derived/Build/Products/Release-iphoneos -maxdepth 1 -name NoirVault.app -print -quit)"
           test -n "$APP_PATH"
+          test -d "$APP_PATH/PlugIns/NoirVaultCredentialProvider.appex"
+          /usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionPointIdentifier' "$APP_PATH/PlugIns/NoirVaultCredentialProvider.appex/Info.plist" | grep -q 'com.apple.authentication-services-credential-provider-ui'
+          test -f "$APP_PATH/Assets.car"
           ios/scripts/package-unsigned-ipa.sh "$APP_PATH" ios/build/NoirVault-unsigned.ipa
           unzip -l ios/build/NoirVault-unsigned.ipa | grep -q 'Payload/NoirVault.app/'
+          unzip -l ios/build/NoirVault-unsigned.ipa | grep -q 'Payload/NoirVault.app/PlugIns/NoirVaultCredentialProvider.appex/'
 
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
