@@ -1,0 +1,33 @@
+[package]
+name = "noirvault"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"
+
+[dependencies]
+slint = "1.7.0"
+argon2 = "0.5.3"
+chacha20poly1305 = { version = "0.10.1", features = ["alloc", "stream"] }
+zeroize = { version = "1.8.1", features = ["zeroize_derive", "alloc"] }
+rand = "0.8.5"
+rfd = "0.14.1"
+sha2 = "0.11.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+base64 = "0.22"
+uuid = { version = "1.0", features = ["v4"] }
+arboard = "3.4.0"
+totp-rs = "5.5"
+enigo = "0.1"
+machine-uid = "0.3"
+hex = "0.4"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59.0", features = ["Win32_System_Memory", "Win32_System_Threading", "Win32_System_LibraryLoader", "Win32_Foundation", "Win32_System_SystemInformation", "Win32_System_Diagnostics_Debug"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2.155"
+
+[build-dependencies]
+slint-build = "1.7.0"
+winres = "0.1"

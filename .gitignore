@@ -1,0 +1,12 @@
+/target
+
+# Sensitive Data Files
+vault.dat
+*.dat
+*.key
+*.keyfile
+*.pem
+
+# OS generated files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,3 @@
+[build]
+# Static CRT compilation for Windows
+rustflags = ["-C", "target-feature=+crt-static"]

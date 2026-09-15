@@ -1,0 +1,547 @@
+import { Button, VerticalBox, HorizontalBox, LineEdit, ListView, TextEdit } from "std-widgets.slint";
+
+struct VaultItemUI {
+    id: string,
+    title: string,
+    description: string,
+    content: string,
+    item_type: string,
+    icon_type: string,
+    totp_code: string,
+    totp_seconds: int,
+    tags: string,
+}
+
+export component AppWindow inherits Window {
+    title: "NoirVault";
+    min-width: 1150px;
+    max-width: 1150px;
+    min-height: 700px;
+    max-height: 700px;
+    
+    in property <bool> unlocked: false;
+    in property <string> status_message: "";
+    in property <string> keyfile_path: "No file selected";
+    
+    in property <[VaultItemUI]> vault_items: [];
+    in-out property <int> selected_index: -1;
+    
+    in-out property <string> active_category: "All Items";
+    in-out property <string> search_query: "";
+    
+    in-out property <bool> show_add_dialog: false;
+    in-out property <string> add_dialog_type: "password";
+    in-out property <string> file_to_add_path: "";
+    in-out property <string> file_to_add_b64: "";
+    
+    in-out property <bool> machine_trusted: false;
+    in-out property <bool> auto_type_active: false;
+    in-out property <int> auto_type_countdown: 0;
+    
+    callback select_keyfile();
+    callback unlock(string);
+    callback lock_and_exit();
+    
+    callback toggle_trust_machine();
+    callback auto_type_password();
+    
+    callback add_item(string, string, string, string, string, string); // type, title, description, content, totp_secret, tags
+    callback pick_file_to_add();
+    
+    callback delete_item(string); // Use ID
+    callback extract_file(string);
+    callback copy_to_clipboard(string);
+    
+    callback handle_key_pressed(string);
+    callback search(string);
+    
+    forward-focus: global_focus;
+    
+    global_focus := FocusScope {
+        key-pressed(event) => {
+            if event.modifiers.control && event.text == "k" {
+                search_input.focus();
+                return accept;
+            }
+            if event.text == Key.UpArrow {
+                root.handle_key_pressed("up");
+                return accept;
+            }
+            if event.text == Key.DownArrow {
+                root.handle_key_pressed("down");
+                return accept;
+            }
+            if event.text == Key.Return {
+                root.handle_key_pressed("enter");
+                return accept;
+            }
+            return reject;
+        }
+
+        VerticalBox {
+            visible: !root.unlocked;
+            alignment: center;
+            spacing: 16px;
+            padding: 32px;
+
+            HorizontalBox {
+                alignment: center;
+                Image { 
+                    source: @image-url("assets/logo.png"); 
+                    height: 200px; 
+                    width: 200px;
+                    image-fit: contain; 
+                }
+            }
+
+            Text {
+                text: "Unlock NoirVault";
+                font-size: 24px;
+                font-weight: 700;
+                horizontal-alignment: center;
+            }
+
+            HorizontalBox {
+                spacing: 8px;
+                Text { text: "Keyfile:"; vertical-alignment: center; }
+                Text { text: root.keyfile_path; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+                Button {
+                    text: "Browse...";
+                    clicked => { root.select_keyfile(); }
+                }
+            }
+
+            password_input := LineEdit {
+                placeholder-text: "Master Password";
+                input-type: password;
+                accepted => { root.unlock(self.text); self.text = ""; }
+            }
+
+            Button {
+                text: "Unlock Vault";
+                primary: true;
+                clicked => { root.unlock(password_input.text); password_input.text = ""; }
+            }
+            
+            if root.status_message != "": Text {
+                text: root.status_message;
+                color: red;
+                horizontal-alignment: center;
+            }
+        }
+
+        VerticalBox {
+            visible: root.unlocked;
+            padding: 16px;
+            spacing: 12px;
+
+            // Header
+            HorizontalBox {
+                alignment: space-between;
+                HorizontalBox {
+                    spacing: 16px;
+                    Image { 
+                        source: @image-url("assets/logo.png"); 
+                        width: 72px; 
+                        height: 72px; 
+                        image-fit: contain;
+                    }
+                    Text {
+                        text: "NoirVault";
+                        font-size: 24px;
+                        font-weight: 800;
+                        vertical-alignment: center;
+                    }
+                }
+                HorizontalBox {
+                    spacing: 12px;
+                    Button {
+                        text: root.machine_trusted ? "Trusted Machine ✓" : "Trust this Machine";
+                        clicked => { root.toggle_trust_machine(); }
+                    }
+                    Button {
+                        text: "Lock & Exit";
+                        clicked => { root.lock_and_exit(); }
+                    }
+                }
+            }
+
+            // 3-Pane Container
+            HorizontalBox {
+                spacing: 16px;
+                
+                // Leftmost Pane (Categories)
+                VerticalBox {
+                    width: 180px;
+                    spacing: 4px;
+                    
+                    Text { text: "CATEGORIES"; font-size: 12px; font-weight: 700; color: gray; }
+                    
+                    Rectangle {
+                        height: 36px;
+                        background: root.active_category == "All Items" ? #333 : transparent;
+                        border-radius: 4px;
+                        TouchArea { clicked => { root.active_category = "All Items"; root.selected_index = -1; root.search(root.search_query); } }
+                        HorizontalBox {
+                            spacing: 12px; padding-left: 8px;
+                            Image { source: @image-url("assets/all_items.svg"); width: 16px; height: 16px; colorize: root.active_category == "All Items" ? white : gray; }
+                            Text { text: "All Items"; vertical-alignment: center; }
+                        }
+                    }
+                    Rectangle {
+                        height: 36px;
+                        background: root.active_category == "Passwords" ? #333 : transparent;
+                        border-radius: 4px;
+                        TouchArea { clicked => { root.active_category = "Passwords"; root.selected_index = -1; root.search(root.search_query); } }
+                        HorizontalBox {
+                            spacing: 12px; padding-left: 8px;
+                            Image { source: @image-url("assets/passwords.svg"); width: 16px; height: 16px; colorize: root.active_category == "Passwords" ? white : gray; }
+                            Text { text: "Passwords"; vertical-alignment: center; }
+                        }
+                    }
+                    Rectangle {
+                        height: 36px;
+                        background: root.active_category == "Secure Notes" ? #333 : transparent;
+                        border-radius: 4px;
+                        TouchArea { clicked => { root.active_category = "Secure Notes"; root.selected_index = -1; root.search(root.search_query); } }
+                        HorizontalBox {
+                            spacing: 12px; padding-left: 8px;
+                            Image { source: @image-url("assets/secure_notes.svg"); width: 16px; height: 16px; colorize: root.active_category == "Secure Notes" ? white : gray; }
+                            Text { text: "Secure Notes"; vertical-alignment: center; }
+                        }
+                    }
+                    Rectangle {
+                        height: 36px;
+                        background: root.active_category == "Files" ? #333 : transparent;
+                        border-radius: 4px;
+                        TouchArea { clicked => { root.active_category = "Files"; root.selected_index = -1; root.search(root.search_query); } }
+                        HorizontalBox {
+                            spacing: 12px; padding-left: 8px;
+                            Image { source: @image-url("assets/files.svg"); width: 16px; height: 16px; colorize: root.active_category == "Files" ? white : gray; }
+                            Text { text: "Files"; vertical-alignment: center; }
+                        }
+                    }
+                    Rectangle {
+                        height: 36px;
+                        background: root.active_category == "SSH Keys" ? #333 : transparent;
+                        border-radius: 4px;
+                        TouchArea { clicked => { root.active_category = "SSH Keys"; root.selected_index = -1; root.search(root.search_query); } }
+                        HorizontalBox {
+                            spacing: 12px; padding-left: 8px;
+                            Image { source: @image-url("assets/ssh_keys.svg"); width: 16px; height: 16px; colorize: root.active_category == "SSH Keys" ? white : gray; }
+                            Text { text: "SSH Keys"; vertical-alignment: center; }
+                        }
+                    }
+                }
+                
+                // Vertical Splitter Line
+                Rectangle {
+                    width: 1px;
+                    background: #333;
+                }
+                
+                // Middle Pane (List View)
+                VerticalBox {
+                    width: 320px;
+                    spacing: 8px;
+                    
+                    search_input := LineEdit {
+                        placeholder-text: "Search (Ctrl+K)...";
+                        text <=> root.search_query;
+                    }
+                    
+                    HorizontalBox {
+                        spacing: 8px;
+                        Button { text: "+ Password"; clicked => { root.add_dialog_type = "password"; root.show_add_dialog = true; root.selected_index = -1; } }
+                        Button { text: "+ File"; clicked => { root.add_dialog_type = "file"; root.show_add_dialog = true; root.selected_index = -1; } }
+                    }
+
+                    ListView {
+                        vertical-stretch: 1;
+                        for item[idx] in root.vault_items: Rectangle {
+                            height: 48px;
+                            background: idx == root.selected_index ? #444 : transparent;
+                            border-radius: 4px;
+                            HorizontalBox {
+                                alignment: space-between;
+                                padding-left: 8px;
+                                padding-right: 8px;
+                                
+                                HorizontalBox {
+                                    spacing: 12px;
+                                    Image {
+                                        width: 20px;
+                                        height: 20px;
+                                        source: 
+                                            item.icon_type == "google" ? @image-url("assets/google.svg") :
+                                            item.icon_type == "github" ? @image-url("assets/github.svg") :
+                                            item.icon_type == "discord" ? @image-url("assets/discord.svg") :
+                                            item.icon_type == "steam" ? @image-url("assets/steam.svg") :
+                                            item.icon_type == "microsoft" ? @image-url("assets/microsoft.svg") :
+                                            item.icon_type == "awg" ? @image-url("assets/awg.svg") :
+                                            item.icon_type == "bank" ? @image-url("assets/bank.svg") :
+                                            item.icon_type == "note" ? @image-url("assets/secure_notes.svg") :
+                                            item.icon_type == "file" ? @image-url("assets/files.svg") :
+                                            item.icon_type == "ssh_key" ? @image-url("assets/ssh_keys.svg") :
+                                            @image-url("assets/passwords.svg");
+                                    }
+                                    VerticalBox {
+                                        alignment: center;
+                                        Text { 
+                                            text: item.title; 
+                                            font-size: 14px;
+                                            overflow: elide;
+                                        }
+                                        if item.tags != "": Text {
+                                            text: item.tags;
+                                            font-size: 11px;
+                                            color: gray;
+                                            overflow: elide;
+                                        }
+                                    }
+                                }
+                                if item.totp_code != "": HorizontalBox {
+                                    spacing: 4px;
+                                    alignment: end;
+                                    Image {
+                                        source: @image-url("assets/clock.svg");
+                                        width: 14px; height: 14px;
+                                        colorize: item.totp_seconds < 5 ? red : gray;
+                                    }
+                                    Text {
+                                        text: item.totp_seconds + "s";
+                                        color: item.totp_seconds < 5 ? red : gray;
+                                        vertical-alignment: center;
+                                        font-size: 12px;
+                                    }
+                                }
+                            }
+                            TouchArea {
+                                clicked => { root.selected_index = idx; root.show_add_dialog = false; }
+                            }
+                        }
+                    }
+                }
+                
+                // Right Pane (Quick Preview / Details / Add Dialog)
+                Rectangle {
+                    horizontal-stretch: 1;
+                    background: #1e1e1e;
+                    border-radius: 8px;
+                    
+                    if !root.show_add_dialog && (root.selected_index < 0 || root.selected_index >= root.vault_items.length): Text {
+                        text: "No item selected. Use Arrow Keys, or click + to add one.";
+                        color: gray;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                    
+                    if root.show_add_dialog: VerticalBox {
+                        padding: 32px;
+                        spacing: 16px;
+                        alignment: start;
+                        
+                        Text {
+                            text: root.add_dialog_type == "password" ? "Add New Password" : "Add New File";
+                            font-size: 24px;
+                            font-weight: 700;
+                        }
+                        
+                        title_input := LineEdit {
+                            placeholder-text: "Title (e.g., example.com)";
+                        }
+                        
+                        description_input := LineEdit {
+                            visible: root.add_dialog_type == "password";
+                            placeholder-text: "Description (Optional)";
+                        }
+                        
+                        content_input := LineEdit {
+                            visible: root.add_dialog_type == "password";
+                            placeholder-text: "Password / Secret";
+                            input-type: password;
+                        }
+                        
+                        totp_input := LineEdit {
+                            visible: root.add_dialog_type == "password";
+                            placeholder-text: "TOTP Secret (Base32, Optional)";
+                        }
+                        
+                        tags_input := LineEdit {
+                            visible: root.add_dialog_type == "password";
+                            placeholder-text: "Tags (comma-separated, Optional)";
+                        }
+                        
+                        HorizontalBox {
+                            visible: root.add_dialog_type == "file";
+                            spacing: 8px;
+                            Text { text: root.file_to_add_path == "" ? "No file selected" : root.file_to_add_path; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+                            Button {
+                                text: "Browse...";
+                                clicked => { root.pick_file_to_add(); }
+                            }
+                        }
+                        
+                        HorizontalBox {
+                            spacing: 16px;
+                            Button {
+                                text: "Cancel";
+                                clicked => { root.show_add_dialog = false; }
+                            }
+                            Button {
+                                text: "Save";
+                                primary: true;
+                                clicked => {
+                                    if root.add_dialog_type == "password" {
+                                        root.add_item("password", title_input.text, description_input.text, content_input.text, totp_input.text, tags_input.text);
+                                    } else {
+                                        root.add_item("file", title_input.text, "", root.file_to_add_b64, "", "");
+                                    }
+                                    title_input.text = "";
+                                    content_input.text = "";
+                                    description_input.text = "";
+                                    totp_input.text = "";
+                                    tags_input.text = "";
+                                    root.file_to_add_path = "";
+                                    root.file_to_add_b64 = "";
+                                    root.show_add_dialog = false;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if !root.show_add_dialog && root.selected_index >= 0 && root.selected_index < root.vault_items.length: VerticalBox {
+                        padding: 32px;
+                        spacing: 24px;
+                        alignment: start;
+                        
+                        // Selected Item Details
+                        HorizontalBox {
+                            spacing: 16px;
+                            Image {
+                                width: 36px;
+                                height: 36px;
+                                source: 
+                                    root.vault_items[root.selected_index].icon_type == "google" ? @image-url("assets/google.svg") :
+                                    root.vault_items[root.selected_index].icon_type == "github" ? @image-url("assets/github.svg") :
+                                    root.vault_items[root.selected_index].icon_type == "discord" ? @image-url("assets/discord.svg") :
+                                    root.vault_items[root.selected_index].icon_type == "steam" ? @image-url("assets/steam.svg") :
+                                    root.vault_items[root.selected_index].icon_type == "microsoft" ? @image-url("assets/microsoft.svg") :
+                                    root.vault_items[root.selected_index].icon_type == "awg" ? @image-url("assets/awg.svg") :
+                                    root.vault_items[root.selected_index].icon_type == "bank" ? @image-url("assets/bank.svg") :
+                                    root.vault_items[root.selected_index].icon_type == "note" ? @image-url("assets/secure_notes.svg") :
+                                    root.vault_items[root.selected_index].icon_type == "file" ? @image-url("assets/files.svg") :
+                                    root.vault_items[root.selected_index].icon_type == "ssh_key" ? @image-url("assets/ssh_keys.svg") :
+                                    @image-url("assets/passwords.svg");
+                            }
+                            Text {
+                                text: root.vault_items[root.selected_index].title;
+                                font-size: 28px;
+                                font-weight: 700;
+                                vertical-alignment: center;
+                            }
+                        }
+                        
+                        if root.vault_items[root.selected_index].tags != "": Text {
+                            text: root.vault_items[root.selected_index].tags;
+                            font-size: 12px;
+                            color: #a29bfe; // Slight purple tint for tags
+                        }
+                        
+                        if root.vault_items[root.selected_index].description != "": Text {
+                            text: root.vault_items[root.selected_index].description;
+                            font-size: 16px;
+                            color: gray;
+                        }
+                        
+                        if root.vault_items[root.selected_index].item_type == "password" || root.vault_items[root.selected_index].item_type == "note" || root.vault_items[root.selected_index].item_type == "ssh_key": VerticalBox {
+                            spacing: 12px;
+                            
+                            Text { text: "Secret Data"; font-weight: 600; color: gray; }
+                            HorizontalBox {
+                                spacing: 8px;
+                                LineEdit {
+                                    text: root.vault_items[root.selected_index].content;
+                                    read-only: true;
+                                    horizontal-stretch: 1;
+                                }
+                                Rectangle {
+                                    background: #444;
+                                    border-radius: 4px;
+                                    width: 44px;
+                                    TouchArea { clicked => { root.copy_to_clipboard(root.vault_items[root.selected_index].content); } }
+                                    Image { source: @image-url("assets/copy.svg"); width: 22px; height: 22px; }
+                                }
+                                Rectangle {
+                                    background: root.auto_type_active ? #0984e3 : #444;
+                                    border-radius: 4px;
+                                    width: 44px;
+                                    TouchArea { clicked => { if !root.auto_type_active { root.auto_type_password(); } } }
+                                    Image { source: @image-url("assets/auto_type.svg"); width: 22px; height: 22px; colorize: root.auto_type_active ? white : transparent; }
+                                }
+                            }
+                            
+                            if root.vault_items[root.selected_index].totp_code != "": VerticalBox {
+                                padding-top: 16px;
+                                spacing: 12px;
+                                Text { text: "TOTP 2FA"; font-weight: 600; color: gray; }
+                                
+                                HorizontalBox {
+                                    spacing: 16px;
+                                    TouchArea {
+                                        mouse-cursor: pointer;
+                                        clicked => { root.copy_to_clipboard(root.vault_items[root.selected_index].totp_code); }
+                                        Text {
+                                            text: root.vault_items[root.selected_index].totp_code;
+                                            font-size: 42px;
+                                            font-weight: 800;
+                                            color: #2e86de;
+                                            vertical-alignment: center;
+                                        }
+                                    }
+                                    HorizontalBox {
+                                        spacing: 8px;
+                                        Image {
+                                            source: @image-url("assets/clock.svg");
+                                            width: 24px; height: 24px;
+                                            colorize: root.vault_items[root.selected_index].totp_seconds < 5 ? red : gray;
+                                        }
+                                        Text {
+                                            text: root.vault_items[root.selected_index].totp_seconds + "s";
+                                            font-size: 20px;
+                                            color: root.vault_items[root.selected_index].totp_seconds < 5 ? red : gray;
+                                            vertical-alignment: center;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if root.vault_items[root.selected_index].item_type == "file": VerticalBox {
+                            spacing: 12px;
+                            Text {
+                                text: "This is an encrypted file stored in the vault.";
+                                color: gray;
+                            }
+                            Button {
+                                text: "Extract & Save File";
+                                primary: true;
+                                clicked => { root.extract_file(root.vault_items[root.selected_index].id); }
+                            }
+                        }
+                        
+                        Rectangle { vertical-stretch: 1; } // Push delete button to bottom
+                        
+                        HorizontalBox {
+                            alignment: end;
+                            Button {
+                                text: "Delete Item";
+                                clicked => { root.delete_item(root.vault_items[root.selected_index].id); }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
