@@ -1,4 +1,5 @@
 /target
+/.worktrees
 
 # Sensitive Data Files
 vault.dat
