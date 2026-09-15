@@ -71,7 +71,7 @@ final class VaultStore {
             }
             do {
                 let data = try JSONDecoder().decode(VaultData.self, from: plaintext)
-                let key = try VaultCore.deriveKey(password: masterPassword, envelope: encrypted)
+                let key = try VaultCore.deriveKey(envelope: encrypted, password: masterPassword)
                 try SharedKeychain.saveShared(key, account: Self.derivedKeyAccount, accessControl: SharedKeychain.biometricAccessControl())
                 return UnlockedVault(data: data, envelope: encrypted, key: key)
             } catch {
@@ -85,7 +85,7 @@ final class VaultStore {
         let plaintext = try JSONEncoder().encode(data)
         let envelope = try VaultCore.encrypt(json: plaintext, password: masterPassword)
         try writeEnvelope(envelope)
-        let key = try VaultCore.deriveKey(password: masterPassword, envelope: envelope)
+        let key = try VaultCore.deriveKey(envelope: envelope, password: masterPassword)
         try SharedKeychain.saveShared(key, account: Self.derivedKeyAccount, accessControl: SharedKeychain.biometricAccessControl())
         return UnlockedVault(data: data, envelope: envelope, key: key)
     }

@@ -57,7 +57,8 @@ enum SharedKeychain {
             [.biometryCurrentSet],
             &error
         ) else {
-            throw error?.takeRetainedValue() ?? VaultStoreError.keychainFailure(errSecParam)
+            if let error { throw error.takeRetainedValue() }
+            throw VaultStoreError.keychainFailure(errSecParam)
         }
         return control
     }

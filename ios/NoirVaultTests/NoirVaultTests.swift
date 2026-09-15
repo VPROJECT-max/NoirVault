@@ -55,6 +55,13 @@ final class NoirVaultTests: XCTestCase {
         XCTAssertEqual(configuration.period, 45)
     }
 
+    func testSHA256AndSHA512RFC6238VectorsAt59Seconds() throws {
+        let sha256 = TOTPConfiguration(secret: Data("12345678901234567890123456789012".utf8), issuer: "", account: "", algorithm: .sha256, digits: 8, period: 30)
+        let sha512 = TOTPConfiguration(secret: Data("1234567890123456789012345678901234567890123456789012345678901234".utf8), issuer: "", account: "", algorithm: .sha512, digits: 8, period: 30)
+        XCTAssertEqual(TOTPGenerator.code(configuration: sha256, at: Date(timeIntervalSince1970: 59)), "46119246")
+        XCTAssertEqual(TOTPGenerator.code(configuration: sha512, at: Date(timeIntervalSince1970: 59)), "90693936")
+    }
+
     func testRegistrationAuthenticatorDataContainsRPHashAndAttestedFlag() throws {
         let key = P256.Signing.PrivateKey()
         let data = try WebAuthn.registrationAuthenticatorData(

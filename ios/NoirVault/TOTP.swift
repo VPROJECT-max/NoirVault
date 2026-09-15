@@ -30,9 +30,9 @@ struct TOTPConfiguration: Equatable {
         if trimmed.lowercased().hasPrefix("otpauth://") {
             guard let components = URLComponents(string: trimmed),
                   components.host?.lowercased() == "totp" else { throw TOTPError.invalidSecret }
-            let parameters = Dictionary(uniqueKeysWithValues: (components.queryItems ?? []).map {
-                ($0.name.lowercased(), $0.value ?? "")
-            })
+            let parameters = (components.queryItems ?? []).reduce(into: [String: String]()) {
+                $0[$1.name.lowercased()] = $1.value ?? ""
+            }
             let secret = try decodeBase32(parameters["secret"] ?? "")
             let digits = Int(parameters["digits"] ?? "6") ?? 0
             guard digits == 6 || digits == 8 else { throw TOTPError.invalidDigits }

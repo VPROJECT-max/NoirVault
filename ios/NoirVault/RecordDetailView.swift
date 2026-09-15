@@ -35,7 +35,17 @@ struct RecordDetailView: View {
                 }
                 .noirCard()
 
-                if item.itemType == .file {
+                if item.itemType == .passkey, let material = item.passkeyMaterial {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("USB-resident passkey", systemImage: "person.badge.key.fill")
+                            .font(.headline).foregroundStyle(NoirTheme.mint)
+                        LabeledContent("Website", value: material.relyingParty)
+                        LabeledContent("Account", value: material.userName)
+                        Text("The private key stays encrypted inside the paired USB vault and is never displayed or copied.")
+                            .font(.footnote).foregroundStyle(NoirTheme.muted)
+                    }
+                    .noirCard()
+                } else if item.itemType == .file {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("This attachment is encrypted inside your USB vault.")
                             .foregroundStyle(NoirTheme.muted)

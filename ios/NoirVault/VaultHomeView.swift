@@ -77,7 +77,7 @@ struct VaultHomeView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        ForEach(VaultItemType.allCases) { type in
+                        ForEach(VaultItemType.allCases.filter { $0 != .passkey }) { type in
                             Button(type.title, systemImage: type.symbol) {
                                 editorType = type
                                 showingEditor = true

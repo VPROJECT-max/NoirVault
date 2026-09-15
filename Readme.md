@@ -52,9 +52,11 @@ NoirVault is designed to be 100% portable. You can install it on any standard US
 - **enigo**: A cross-platform library that handles the low-level API calls required to simulate physical keyboard input for the Auto-Type system.
 - **winres**: A build-time dependency used to compile Windows Resource files, allowing us to permanently embed custom `.ico` logos directly into the executable header.
 
-## iPhone build artifact
+## NoirVault 2.0 for iPhone
 
-The `IOS` branch includes a native iPhone app for iOS 26. The GitHub Actions workflow builds the shared Rust vault core on macOS, packages `NoirVault.app` as `NoirVault-unsigned.ipa`, and uploads the IPA plus its SHA-256 checksum as workflow artifacts. The app is intentionally unsigned; iOS installation and launch still require a valid signing path managed outside this repository.
+The `IOS` branch includes a native iPhone app for iOS 26 with the same portable USB vault format. It provides reliable full-row navigation, password/note/file/SSH-key storage, QR and manual rotating codes, password and OTP AutoFill, and USB-resident ES256 passkeys for registration and sign-in. The master password is never retained after unlock; a Face ID-protected, device-bound derived key can decrypt only the paired USB envelope.
+
+GitHub Actions builds the shared Rust vault core on macOS, runs Rust and iOS tests, embeds `NoirVaultCredentialProvider.appex`, packages `NoirVault.app` as `NoirVault-unsigned.ipa`, and uploads the IPA plus its SHA-256 checksum. The app is intentionally unsigned. The sideload signer must preserve the App Group, Keychain Sharing, and AutoFill credential-provider entitlements for both bundles. See [the iPhone test guide](docs/IOS_TESTING.md).
 
 ## Directory Structure
 ```text
