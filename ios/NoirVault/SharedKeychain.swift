@@ -3,22 +3,42 @@ import LocalAuthentication
 import Security
 
 enum SharedKeychain {
+    enum StorageScope: Equatable {
+        case sharedWithExtension
+        case privateToApp
+    }
+
     static let accessGroup = "group.com.Tokyo.noirvault"
     static let service = "com.Tokyo.noirvault"
 
     static func saveShared(_ data: Data, account: String, accessControl: SecAccessControl? = nil) throws {
-        let identity = baseQuery(account: account, shared: true)
-        SecItemDelete(identity as CFDictionary)
+        _ = try performWriteWithFallback { scope in
+            let identity = baseQuery(account: account, shared: scope == .sharedWithExtension)
+            SecItemDelete(identity as CFDictionary)
 
-        var query = identity
-        query[kSecValueData] = data
-        if let accessControl {
-            query[kSecAttrAccessControl] = accessControl
-        } else {
-            query[kSecAttrAccessible] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+            var query = identity
+            query[kSecValueData] = data
+            if let accessControl {
+                query[kSecAttrAccessControl] = accessControl
+            } else {
+                query[kSecAttrAccessible] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+            }
+            return SecItemAdd(query as CFDictionary, nil)
         }
-        let status = SecItemAdd(query as CFDictionary, nil)
-        guard status == errSecSuccess else { throw VaultStoreError.keychainFailure(status) }
+    }
+
+    static func performWriteWithFallback(_ write: (StorageScope) -> OSStatus) throws -> StorageScope {
+        let sharedStatus = write(.sharedWithExtension)
+        if sharedStatus == errSecSuccess { return .sharedWithExtension }
+        guard sharedStatus == errSecMissingEntitlement else {
+            throw VaultStoreError.keychainFailure(sharedStatus)
+        }
+
+        let privateStatus = write(.privateToApp)
+        guard privateStatus == errSecSuccess else {
+            throw VaultStoreError.keychainFailure(privateStatus)
+        }
+        return .privateToApp
     }
 
     static func readShared(account: String, context: LAContext? = nil) throws -> Data {
