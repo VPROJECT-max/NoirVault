@@ -69,6 +69,8 @@ struct RootView: View {
                     try store.probe()
                 } catch let error as VaultStoreError {
                     probeError = error
+                } catch {
+                    probeError = .usbUnavailable
                 }
             }
             launchRoute = VaultLaunchPolicy.route(
