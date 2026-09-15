@@ -2,19 +2,46 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
+enum VaultLaunchRoute: Equatable {
+    case checking
+    case setupRequired
+    case unlockRequired
+}
+
+enum VaultLaunchPolicy {
+    static func route(hasStoredPairing: Bool, probeError: VaultStoreError?) -> VaultLaunchRoute {
+        guard hasStoredPairing else { return .setupRequired }
+        switch probeError {
+        case .wrongUSB, .vaultMissing:
+            return .setupRequired
+        default:
+            return .unlockRequired
+        }
+    }
+}
+
 struct RootView: View {
     @EnvironmentObject private var session: VaultSession
     @Environment(\.scenePhase) private var scenePhase
     let store: VaultStore
     @State private var errorMessage: String?
+    @State private var launchRoute: VaultLaunchRoute = .checking
 
     var body: some View {
         Group {
             if session.isLocked {
-                if store.isConfigured {
-                    UnlockView(store: store, errorMessage: $errorMessage)
-                } else {
-                    USBSetupView(store: store, errorMessage: $errorMessage)
+                switch launchRoute {
+                case .checking:
+                    ProgressView("Checking paired USB…")
+                        .foregroundStyle(NoirTheme.muted)
+                case .setupRequired:
+                    USBSetupView(store: store, errorMessage: $errorMessage) {
+                        launchRoute = .unlockRequired
+                    }
+                case .unlockRequired:
+                    UnlockView(store: store, errorMessage: $errorMessage) {
+                        launchRoute = .setupRequired
+                    }
                 }
             } else {
                 VaultHomeView(store: store, errorMessage: $errorMessage)
@@ -34,6 +61,21 @@ struct RootView: View {
             if phase != .active { session.lock() }
         }
         .simultaneousGesture(TapGesture().onEnded { session.touch() })
+        .task {
+            let hasStoredPairing = store.isConfigured
+            var probeError: VaultStoreError?
+            if hasStoredPairing {
+                do {
+                    try store.probe()
+                } catch let error as VaultStoreError {
+                    probeError = error
+                }
+            }
+            launchRoute = VaultLaunchPolicy.route(
+                hasStoredPairing: hasStoredPairing,
+                probeError: probeError
+            )
+        }
         .task(id: session.isLocked) {
             guard !session.isLocked else { return }
             while !Task.isCancelled {
@@ -58,6 +100,7 @@ private struct USBSetupView: View {
     @EnvironmentObject private var session: VaultSession
     let store: VaultStore
     @Binding var errorMessage: String?
+    let onConfigured: () -> Void
     @State private var masterPassword = ""
     @State private var confirmation = ""
     @State private var showFolderPicker = false
@@ -105,6 +148,7 @@ private struct USBSetupView: View {
                     try store.pair(with: directory)
                     let unlocked = try store.create(masterPassword: masterPassword)
                     session.unlock(unlocked)
+                    onConfigured()
                     masterPassword = ""
                     confirmation = ""
                 } catch {
@@ -119,6 +163,7 @@ private struct UnlockView: View {
     @EnvironmentObject private var session: VaultSession
     let store: VaultStore
     @Binding var errorMessage: String?
+    let onReconfigure: () -> Void
     @State private var masterPassword = ""
     @State private var isUnlocking = false
 
@@ -145,6 +190,11 @@ private struct UnlockView: View {
             .buttonStyle(.borderedProminent)
             .tint(NoirTheme.violet)
             .disabled(masterPassword.isEmpty || isUnlocking)
+            Button("Set up a new or reformatted USB", systemImage: "externaldrive.badge.plus") {
+                masterPassword = ""
+                onReconfigure()
+            }
+            .buttonStyle(.bordered)
             Spacer()
         }
         .padding(28)

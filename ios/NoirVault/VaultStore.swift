@@ -123,7 +123,12 @@ final class VaultStore {
     }
 
     func probe() throws {
-        try withVaultDirectory { _ in () }
+        try withVaultDirectory { directory in
+            let vaultURL = directory.appendingPathComponent(Self.vaultFilename)
+            guard FileManager.default.fileExists(atPath: vaultURL.path) else {
+                throw VaultStoreError.vaultMissing
+            }
+        }
     }
 
     private func withVaultDirectory<T>(_ work: (URL) throws -> T) throws -> T {
