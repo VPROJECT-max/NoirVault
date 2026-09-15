@@ -78,7 +78,7 @@ fn page_size() -> usize {
     info.dwPageSize as usize
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "ios"))]
 fn page_size() -> usize {
     unsafe { libc::sysconf(libc::_SC_PAGESIZE) as usize }
 }
@@ -95,7 +95,7 @@ fn unlock_memory(ptr: *mut u8, size: usize) {
     unsafe { VirtualUnlock(ptr as _, size); }
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "ios"))]
 fn lock_memory(ptr: *mut u8, size: usize) -> bool {
     use libc::{mlock, madvise, MADV_DONTDUMP};
     unsafe { 
@@ -107,7 +107,7 @@ fn lock_memory(ptr: *mut u8, size: usize) -> bool {
     }
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "ios"))]
 fn unlock_memory(ptr: *mut u8, size: usize) {
     use libc::munlock;
     unsafe {

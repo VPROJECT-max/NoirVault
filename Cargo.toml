@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 build = "build.rs"
 
+[lib]
+crate-type = ["rlib", "staticlib"]
+
 [dependencies]
 slint = "1.7.0"
 argon2 = "0.5.3"
@@ -25,7 +28,7 @@ hex = "0.4"
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59.0", features = ["Win32_System_Memory", "Win32_System_Threading", "Win32_System_LibraryLoader", "Win32_Foundation", "Win32_System_SystemInformation", "Win32_System_Diagnostics_Debug"] }
 
-[target.'cfg(target_os = "linux")'.dependencies]
+[target.'cfg(any(target_os = "linux", target_os = "ios"))'.dependencies]
 libc = "0.2.155"
 
 [build-dependencies]
