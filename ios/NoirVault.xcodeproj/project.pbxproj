@@ -55,7 +55,7 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A50000000000000000000001 /* NoirVault */ = {isa = PBXNativeTarget; buildConfigurationList = A80000000000000000000001; buildPhases = (A60000000000000000000001, A90000000000000000000001, AA00000000000000000000001, AB00000000000000000000001); buildRules = (); dependencies = (); name = NoirVault; productName = NoirVault; productReference = A2000000000000000000000D; productType = "com.apple.product-type.application"; };
+		A50000000000000000000001 /* NoirVault */ = {isa = PBXNativeTarget; buildConfigurationList = A80000000000000000000001; buildPhases = (A60000000000000000000001, AB00000000000000000000001, A90000000000000000000001, AA00000000000000000000001); buildRules = (); dependencies = (); name = NoirVault; productName = NoirVault; productReference = A2000000000000000000000D; productType = "com.apple.product-type.application"; };
 		A50000000000000000000002 /* NoirVaultTests */ = {isa = PBXNativeTarget; buildConfigurationList = A80000000000000000000002; buildPhases = (A60000000000000000000002, A90000000000000000000002); buildRules = (); dependencies = (AC00000000000000000000001); name = NoirVaultTests; productName = NoirVaultTests; productReference = A2000000000000000000000F; productType = "com.apple.product-type.bundle.unit-test"; };
 /* End PBXNativeTarget section */
 
