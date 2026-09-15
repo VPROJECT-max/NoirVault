@@ -7,22 +7,31 @@ build = "build.rs"
 [lib]
 crate-type = ["rlib", "staticlib"]
 
+[[bin]]
+name = "noirvault"
+path = "src/main.rs"
+required-features = ["desktop"]
+
+[features]
+default = ["desktop"]
+desktop = ["dep:arboard", "dep:enigo", "dep:machine-uid", "dep:rfd", "dep:slint", "dep:totp-rs"]
+
 [dependencies]
-slint = "1.7.0"
+slint = { version = "1.7.0", optional = true }
 argon2 = "0.5.3"
 chacha20poly1305 = { version = "0.10.1", features = ["alloc", "stream"] }
 zeroize = { version = "1.8.1", features = ["zeroize_derive", "alloc"] }
 rand = "0.8.5"
-rfd = "0.14.1"
+rfd = { version = "0.14.1", optional = true }
 sha2 = "0.11.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 base64 = "0.22"
 uuid = { version = "1.0", features = ["v4"] }
-arboard = "3.4.0"
-totp-rs = "5.5"
-enigo = "0.1"
-machine-uid = "0.3"
+arboard = { version = "3.4.0", optional = true }
+totp-rs = { version = "5.5", optional = true }
+enigo = { version = "0.1", optional = true }
+machine-uid = { version = "0.3", optional = true }
 hex = "0.4"
 
 [target.'cfg(windows)'.dependencies]

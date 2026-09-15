@@ -11,7 +11,7 @@ fi
 # The iPhone target links only the portable encryption library.  Do not build
 # the desktop Slint executable: it depends on native file-picker backends that
 # are intentionally unavailable on iOS.
-cargo build --lib --manifest-path "${REPOSITORY_ROOT}/Cargo.toml" --release --target "${RUST_TARGET}"
+cargo build --no-default-features --lib --manifest-path "${REPOSITORY_ROOT}/Cargo.toml" --release --target "${RUST_TARGET}"
 OUTPUT_DIRECTORY="${SRCROOT}/build/rust/${PLATFORM_NAME}"
 mkdir -p "${OUTPUT_DIRECTORY}"
 cp "${REPOSITORY_ROOT}/target/${RUST_TARGET}/release/libnoirvault.a" "${OUTPUT_DIRECTORY}/libnoirvault.a"

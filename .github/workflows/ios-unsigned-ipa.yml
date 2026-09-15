@@ -20,7 +20,7 @@ jobs:
         run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 
       - name: Test portable vault core
-        run: cargo test --locked --lib --test portable_vault
+        run: cargo test --locked --no-default-features --lib --test portable_vault
 
       - name: Compile the iPhone simulator app
         run: |

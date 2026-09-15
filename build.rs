@@ -1,5 +1,12 @@
 fn main() {
-    slint_build::compile("ui/app.slint").unwrap();
+    println!("cargo:rerun-if-changed=ui/app.slint");
+
+    // The iPhone app consumes the portable library through its C ABI and has
+    // its own native SwiftUI interface. Avoid generating the desktop Slint UI
+    // when Cargo is building the no-default-features iOS core.
+    if std::env::var_os("CARGO_FEATURE_DESKTOP").is_some() {
+        slint_build::compile("ui/app.slint").unwrap();
+    }
 
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
     if target_os == "windows" {
