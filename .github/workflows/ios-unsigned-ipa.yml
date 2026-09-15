@@ -1,0 +1,52 @@
+name: Build NoirVault unsigned IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [IOS]
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Install Rust iOS targets
+        run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+
+      - name: Test portable vault core
+        run: cargo test --locked
+
+      - name: Build unsigned iPhone app
+        run: |
+          chmod +x ios/scripts/build-rust-core.sh ios/scripts/package-unsigned-ipa.sh
+          xcodebuild build \
+            -project ios/NoirVault.xcodeproj \
+            -scheme NoirVault \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath ios/build/derived \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_STYLE=Manual ARCHS=arm64
+
+      - name: Package IPA and checksum
+        run: |
+          APP_PATH="$(find ios/build/derived/Build/Products/Release-iphoneos -maxdepth 1 -name NoirVault.app -print -quit)"
+          test -n "$APP_PATH"
+          ios/scripts/package-unsigned-ipa.sh "$APP_PATH" ios/build/NoirVault-unsigned.ipa
+          unzip -l ios/build/NoirVault-unsigned.ipa | grep -q 'Payload/NoirVault.app/'
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: NoirVault-unsigned-ipa
+          path: |
+            ios/build/NoirVault-unsigned.ipa
+            ios/build/NoirVault-unsigned.ipa.sha256
+          if-no-files-found: error
+          retention-days: 14

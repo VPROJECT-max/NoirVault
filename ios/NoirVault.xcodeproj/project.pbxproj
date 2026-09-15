@@ -1,0 +1,101 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* NoirVaultApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* NoirVaultApp.swift */; };
+		A10000000000000000000002 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* Models.swift */; };
+		A10000000000000000000003 /* VaultCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* VaultCore.swift */; };
+		A10000000000000000000004 /* VaultStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* VaultStore.swift */; };
+		A10000000000000000000005 /* VaultSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* VaultSession.swift */; };
+		A10000000000000000000006 /* NoirTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* NoirTheme.swift */; };
+		A10000000000000000000007 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* RootView.swift */; };
+		A10000000000000000000008 /* VaultHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* VaultHomeView.swift */; };
+		A10000000000000000000009 /* RecordDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* RecordDetailView.swift */; };
+		A1000000000000000000000A /* RecordEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000A /* RecordEditorView.swift */; };
+		A1000000000000000000000C /* NoirVaultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000C /* NoirVaultTests.swift */; };
+		A1000000000000000000000D /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000E /* XCTest.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A30000000000000000000001 /* PBXContainerItemProxy */ = {isa = PBXContainerItemProxy; containerPortal = A40000000000000000000001 /* Project object */; proxyType = 1; remoteGlobalIDString = A50000000000000000000001; remoteInfo = NoirVault; };
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		A20000000000000000000001 /* NoirVaultApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoirVaultApp.swift; sourceTree = "<group>"; };
+		A20000000000000000000002 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		A20000000000000000000003 /* VaultCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultCore.swift; sourceTree = "<group>"; };
+		A20000000000000000000004 /* VaultStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultStore.swift; sourceTree = "<group>"; };
+		A20000000000000000000005 /* VaultSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultSession.swift; sourceTree = "<group>"; };
+		A20000000000000000000006 /* NoirTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoirTheme.swift; sourceTree = "<group>"; };
+		A20000000000000000000007 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		A20000000000000000000008 /* VaultHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultHomeView.swift; sourceTree = "<group>"; };
+		A20000000000000000000009 /* RecordDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordDetailView.swift; sourceTree = "<group>"; };
+		A2000000000000000000000A /* RecordEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordEditorView.swift; sourceTree = "<group>"; };
+		A2000000000000000000000B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A2000000000000000000000C /* NoirVaultTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoirVaultTests.swift; sourceTree = "<group>"; };
+		A2000000000000000000000D /* NoirVault.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NoirVault.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A2000000000000000000000E /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
+		A2000000000000000000000F /* NoirVaultTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NoirVaultTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A60000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A60000000000000000000002 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A1000000000000000000000D /* XCTest.framework in Frameworks */); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A70000000000000000000001 = {isa = PBXGroup; children = (A70000000000000000000002 /* NoirVault */, A70000000000000000000003 /* NoirVaultTests */, A70000000000000000000004 /* Products */); sourceTree = "<group>"; };
+		A70000000000000000000002 /* NoirVault */ = {isa = PBXGroup; children = (A20000000000000000000001, A20000000000000000000002, A20000000000000000000003, A20000000000000000000004, A20000000000000000000005, A20000000000000000000006, A20000000000000000000007, A20000000000000000000008, A20000000000000000000009, A2000000000000000000000A, A2000000000000000000000B); path = NoirVault; sourceTree = "<group>"; };
+		A70000000000000000000003 /* NoirVaultTests */ = {isa = PBXGroup; children = (A2000000000000000000000C); path = NoirVaultTests; sourceTree = "<group>"; };
+		A70000000000000000000004 /* Products */ = {isa = PBXGroup; children = (A2000000000000000000000D, A2000000000000000000000F); name = Products; sourceTree = "<group>"; };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A50000000000000000000001 /* NoirVault */ = {isa = PBXNativeTarget; buildConfigurationList = A80000000000000000000001; buildPhases = (A60000000000000000000001, A90000000000000000000001, AA00000000000000000000001, AB00000000000000000000001); buildRules = (); dependencies = (); name = NoirVault; productName = NoirVault; productReference = A2000000000000000000000D; productType = "com.apple.product-type.application"; };
+		A50000000000000000000002 /* NoirVaultTests */ = {isa = PBXNativeTarget; buildConfigurationList = A80000000000000000000002; buildPhases = (A60000000000000000000002, A90000000000000000000002); buildRules = (); dependencies = (AC00000000000000000000001); name = NoirVaultTests; productName = NoirVaultTests; productReference = A2000000000000000000000F; productType = "com.apple.product-type.bundle.unit-test"; };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A40000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = { LastSwiftUpdateCheck = 1600; LastUpgradeCheck = 1600; TargetAttributes = { A50000000000000000000001 = { CreatedOnToolsVersion = 16.0; }; }; }; buildConfigurationList = A80000000000000000000003; compatibilityVersion = "Xcode 16.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = A70000000000000000000001; productRefGroup = A70000000000000000000004; projectDirPath = ""; projectRoot = ""; targets = (A50000000000000000000001, A50000000000000000000002); };
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		AB00000000000000000000001 /* Build Rust core */ = {isa = PBXShellScriptBuildPhase; buildActionMask = 2147483647; files = (); inputPaths = (); name = "Build Rust core"; outputPaths = ("$(SRCROOT)/build/rust/$(CURRENT_ARCH)/libnoirvault.a"); runOnlyForDeploymentPostprocessing = 0; shellPath = /bin/bash; shellScript = "\"${SRCROOT}/scripts/build-rust-core.sh\"\n"; };
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A90000000000000000000001 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001, A10000000000000000000002, A10000000000000000000003, A10000000000000000000004, A10000000000000000000005, A10000000000000000000006, A10000000000000000000007, A10000000000000000000008, A10000000000000000000009, A1000000000000000000000A); runOnlyForDeploymentPostprocessing = 0; };
+		A90000000000000000000002 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A1000000000000000000000C); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AA00000000000000000000001 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AC00000000000000000000001 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = A50000000000000000000001; targetProxy = A30000000000000000000001; };
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		AD00000000000000000000001 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_CXX_LANGUAGE_STANDARD = "gnu++20"; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES; DEBUG_INFORMATION_FORMAT = dwarf; GCC_C_LANGUAGE_STANDARD = gnu17; SDKROOT = iphoneos; SWIFT_VERSION = 6.0; }; name = Debug; };
+		AD00000000000000000000002 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_CXX_LANGUAGE_STANDARD = "gnu++20"; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; GCC_C_LANGUAGE_STANDARD = gnu17; SDKROOT = iphoneos; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; SWIFT_VERSION = 6.0; }; name = Release; };
+		AD00000000000000000000003 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; CODE_SIGN_STYLE = Manual; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; INFOPLIST_FILE = NoirVault/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 26.0; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; OTHER_LDFLAGS = "$(inherited) $(SRCROOT)/build/rust/$(CURRENT_ARCH)/libnoirvault.a"; PRODUCT_BUNDLE_IDENTIFIER = com.Tokyo.noirvault; PRODUCT_NAME = NoirVault; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1; }; name = Debug; };
+		AD00000000000000000000004 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; CODE_SIGN_STYLE = Manual; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; INFOPLIST_FILE = NoirVault/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 26.0; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; OTHER_LDFLAGS = "$(inherited) $(SRCROOT)/build/rust/$(CURRENT_ARCH)/libnoirvault.a"; PRODUCT_BUNDLE_IDENTIFIER = com.Tokyo.noirvault; PRODUCT_NAME = NoirVault; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1; }; name = Release; };
+		AD00000000000000000000005 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 26.0; PRODUCT_BUNDLE_IDENTIFIER = com.Tokyo.noirvault.tests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 6.0; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NoirVault.app/NoirVault"; }; name = Debug; };
+		AD00000000000000000000006 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 26.0; PRODUCT_BUNDLE_IDENTIFIER = com.Tokyo.noirvault.tests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 6.0; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NoirVault.app/NoirVault"; }; name = Release; };
+		AD00000000000000000000007 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; IPHONEOS_DEPLOYMENT_TARGET = 26.0; SDKROOT = iphoneos; }; name = Debug; };
+		AD00000000000000000000008 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; IPHONEOS_DEPLOYMENT_TARGET = 26.0; SDKROOT = iphoneos; }; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A80000000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (AD00000000000000000000003, AD00000000000000000000004); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A80000000000000000000002 = {isa = XCConfigurationList; buildConfigurations = (AD00000000000000000000005, AD00000000000000000000006); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
+		A80000000000000000000003 = {isa = XCConfigurationList; buildConfigurations = (AD00000000000000000000007, AD00000000000000000000008); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = A40000000000000000000001 /* Project object */;
+}

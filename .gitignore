@@ -1,5 +1,6 @@
 /target
 /.worktrees
+/ios/build
 
 # Sensitive Data Files
 vault.dat
