@@ -1,4 +1,7 @@
-use crate::crypto::{decrypt_v2, encrypt_v2};
+use crate::crypto::{
+    decrypt_v2, decrypt_v2_with_key, derive_v2_key_for_envelope, encrypt_v2,
+    reencrypt_v2_with_key,
+};
 use std::cell::RefCell;
 use std::ffi::{c_char, CStr, CString};
 use std::ptr;
@@ -93,6 +96,110 @@ pub unsafe extern "C" fn nv_decrypt_json(password: *const c_char, envelope: *con
 
     match decrypt_v2(&password, envelope) {
         Ok(plaintext) => NvBuffer::from_vec(plaintext.as_slice().to_vec()),
+        Err(error) => {
+            set_error(error.to_string());
+            NvBuffer::empty()
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn nv_derive_vault_key(
+    password: *const c_char,
+    envelope: *const u8,
+    envelope_len: usize,
+) -> NvBuffer {
+    let password = match password_from_ptr(password) {
+        Ok(value) => value,
+        Err(error) => {
+            set_error(error);
+            return NvBuffer::empty();
+        }
+    };
+    let envelope = match bytes_from_ptr(envelope, envelope_len) {
+        Ok(value) => value,
+        Err(error) => {
+            set_error(error);
+            return NvBuffer::empty();
+        }
+    };
+
+    LAST_ERROR.with(|slot| *slot.borrow_mut() = None);
+    match derive_v2_key_for_envelope(&password, envelope) {
+        Ok(key) => NvBuffer::from_vec(key.as_slice().to_vec()),
+        Err(error) => {
+            set_error(error.to_string());
+            NvBuffer::empty()
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn nv_decrypt_json_with_key(
+    key: *const u8,
+    key_len: usize,
+    envelope: *const u8,
+    envelope_len: usize,
+) -> NvBuffer {
+    let key = match bytes_from_ptr(key, key_len) {
+        Ok(value) => value,
+        Err(error) => {
+            set_error(error);
+            return NvBuffer::empty();
+        }
+    };
+    let envelope = match bytes_from_ptr(envelope, envelope_len) {
+        Ok(value) => value,
+        Err(error) => {
+            set_error(error);
+            return NvBuffer::empty();
+        }
+    };
+
+    LAST_ERROR.with(|slot| *slot.borrow_mut() = None);
+    match decrypt_v2_with_key(key, envelope) {
+        Ok(plaintext) => NvBuffer::from_vec(plaintext.as_slice().to_vec()),
+        Err(error) => {
+            set_error(error.to_string());
+            NvBuffer::empty()
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn nv_reencrypt_json_with_key(
+    key: *const u8,
+    key_len: usize,
+    existing_envelope: *const u8,
+    existing_envelope_len: usize,
+    json: *const u8,
+    json_len: usize,
+) -> NvBuffer {
+    let key = match bytes_from_ptr(key, key_len) {
+        Ok(value) => value,
+        Err(error) => {
+            set_error(error);
+            return NvBuffer::empty();
+        }
+    };
+    let existing_envelope = match bytes_from_ptr(existing_envelope, existing_envelope_len) {
+        Ok(value) => value,
+        Err(error) => {
+            set_error(error);
+            return NvBuffer::empty();
+        }
+    };
+    let json = match bytes_from_ptr(json, json_len) {
+        Ok(value) => value,
+        Err(error) => {
+            set_error(error);
+            return NvBuffer::empty();
+        }
+    };
+
+    LAST_ERROR.with(|slot| *slot.borrow_mut() = None);
+    match reencrypt_v2_with_key(key, existing_envelope, json) {
+        Ok(envelope) => NvBuffer::from_vec(envelope),
         Err(error) => {
             set_error(error.to_string());
             NvBuffer::empty()

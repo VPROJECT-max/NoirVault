@@ -16,6 +16,7 @@ const V2_TAG_LEN: usize = 16;
 pub enum VaultError {
     MalformedEnvelope,
     AuthenticationFailed,
+    InvalidKey,
 }
 
 impl std::fmt::Display for VaultError {
@@ -23,6 +24,7 @@ impl std::fmt::Display for VaultError {
         match self {
             Self::MalformedEnvelope => formatter.write_str("The vault file is malformed or uses an unsupported format."),
             Self::AuthenticationFailed => formatter.write_str("The master password is incorrect or the vault data was modified."),
+            Self::InvalidKey => formatter.write_str("The vault key must contain exactly 32 bytes."),
         }
     }
 }
@@ -75,30 +77,7 @@ fn derive_v2_key(password: &str, salt: &[u8; V2_SALT_LEN]) -> SecureBuffer {
     key
 }
 
-pub fn is_v2_envelope(data: &[u8]) -> bool {
-    data.starts_with(V2_PREFIX)
-}
-
-pub fn encrypt_v2(password: &str, data: &[u8]) -> Vec<u8> {
-    let salt = generate_salt();
-    let key = derive_v2_key(password, &salt);
-    let cipher = XChaCha20Poly1305::new(Key::from_slice(key.as_slice()));
-
-    let mut nonce_bytes = [0u8; V2_NONCE_LEN];
-    OsRng.fill_bytes(&mut nonce_bytes);
-    let ciphertext = cipher
-        .encrypt(XNonce::from_slice(&nonce_bytes), data)
-        .expect("XChaCha20Poly1305 encryption with a fixed-size nonce succeeds");
-
-    let mut envelope = Vec::with_capacity(V2_PREFIX.len() + salt.len() + nonce_bytes.len() + ciphertext.len());
-    envelope.extend_from_slice(V2_PREFIX);
-    envelope.extend_from_slice(&salt);
-    envelope.extend_from_slice(&nonce_bytes);
-    envelope.extend_from_slice(&ciphertext);
-    envelope
-}
-
-pub fn decrypt_v2(password: &str, envelope: &[u8]) -> Result<SecureBuffer, VaultError> {
+fn parse_v2_envelope(envelope: &[u8]) -> Result<([u8; V2_SALT_LEN], &[u8], &[u8]), VaultError> {
     let minimum_length = V2_PREFIX.len() + V2_SALT_LEN + V2_NONCE_LEN + V2_TAG_LEN;
     if !is_v2_envelope(envelope) || envelope.len() < minimum_length {
         return Err(VaultError::MalformedEnvelope);
@@ -109,13 +88,66 @@ pub fn decrypt_v2(password: &str, envelope: &[u8]) -> Result<SecureBuffer, Vault
     let ciphertext_start = nonce_start + V2_NONCE_LEN;
     let mut salt = [0u8; V2_SALT_LEN];
     salt.copy_from_slice(&envelope[salt_start..nonce_start]);
+    Ok((salt, &envelope[nonce_start..ciphertext_start], &envelope[ciphertext_start..]))
+}
+
+fn encrypt_v2_with_key_and_salt(key: &[u8], salt: &[u8; V2_SALT_LEN], data: &[u8]) -> Result<Vec<u8>, VaultError> {
+    if key.len() != 32 {
+        return Err(VaultError::InvalidKey);
+    }
+    let cipher = XChaCha20Poly1305::new(Key::from_slice(key));
+    let mut nonce_bytes = [0u8; V2_NONCE_LEN];
+    OsRng.fill_bytes(&mut nonce_bytes);
+    let ciphertext = cipher
+        .encrypt(XNonce::from_slice(&nonce_bytes), data)
+        .map_err(|_| VaultError::AuthenticationFailed)?;
+
+    let mut envelope = Vec::with_capacity(V2_PREFIX.len() + salt.len() + nonce_bytes.len() + ciphertext.len());
+    envelope.extend_from_slice(V2_PREFIX);
+    envelope.extend_from_slice(salt);
+    envelope.extend_from_slice(&nonce_bytes);
+    envelope.extend_from_slice(&ciphertext);
+    Ok(envelope)
+}
+
+pub fn is_v2_envelope(data: &[u8]) -> bool {
+    data.starts_with(V2_PREFIX)
+}
+
+pub fn encrypt_v2(password: &str, data: &[u8]) -> Vec<u8> {
+    let salt = generate_salt();
     let key = derive_v2_key(password, &salt);
-    let cipher = XChaCha20Poly1305::new(Key::from_slice(key.as_slice()));
+    encrypt_v2_with_key_and_salt(key.as_slice(), &salt, data)
+        .expect("a freshly derived v2 key always has the required length")
+}
+
+pub fn decrypt_v2(password: &str, envelope: &[u8]) -> Result<SecureBuffer, VaultError> {
+    let key = derive_v2_key_for_envelope(password, envelope)?;
+    decrypt_v2_with_key(key.as_slice(), envelope)
+}
+
+pub fn derive_v2_key_for_envelope(password: &str, envelope: &[u8]) -> Result<SecureBuffer, VaultError> {
+    let (salt, _, _) = parse_v2_envelope(envelope)?;
+    Ok(derive_v2_key(password, &salt))
+}
+
+pub fn decrypt_v2_with_key(key: &[u8], envelope: &[u8]) -> Result<SecureBuffer, VaultError> {
+    if key.len() != 32 {
+        return Err(VaultError::InvalidKey);
+    }
+    let (_, nonce, ciphertext) = parse_v2_envelope(envelope)?;
+    let cipher = XChaCha20Poly1305::new(Key::from_slice(key));
 
     cipher
-        .decrypt(XNonce::from_slice(&envelope[nonce_start..ciphertext_start]), &envelope[ciphertext_start..])
+        .decrypt(XNonce::from_slice(nonce), ciphertext)
         .map(|plaintext| SecureBuffer::from_slice(&plaintext))
         .map_err(|_| VaultError::AuthenticationFailed)
+}
+
+pub fn reencrypt_v2_with_key(key: &[u8], existing_envelope: &[u8], data: &[u8]) -> Result<Vec<u8>, VaultError> {
+    let (salt, _, _) = parse_v2_envelope(existing_envelope)?;
+    let _verified_plaintext = decrypt_v2_with_key(key, existing_envelope)?;
+    encrypt_v2_with_key_and_salt(key, &salt, data)
 }
 
 pub fn encrypt_data(data: &[u8], key: &SecureBuffer) -> Vec<u8> {

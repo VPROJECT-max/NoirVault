@@ -11,6 +11,15 @@ private func nvEncryptJSON(_ password: UnsafePointer<CChar>, _ json: UnsafePoint
 @_silgen_name("nv_decrypt_json")
 private func nvDecryptJSON(_ password: UnsafePointer<CChar>, _ envelope: UnsafePointer<UInt8>?, _ envelopeLength: Int) -> NvBuffer
 
+@_silgen_name("nv_derive_vault_key")
+private func nvDeriveVaultKey(_ password: UnsafePointer<CChar>, _ envelope: UnsafePointer<UInt8>?, _ envelopeLength: Int) -> NvBuffer
+
+@_silgen_name("nv_decrypt_json_with_key")
+private func nvDecryptJSONWithKey(_ key: UnsafePointer<UInt8>?, _ keyLength: Int, _ envelope: UnsafePointer<UInt8>?, _ envelopeLength: Int) -> NvBuffer
+
+@_silgen_name("nv_reencrypt_json_with_key")
+private func nvReencryptJSONWithKey(_ key: UnsafePointer<UInt8>?, _ keyLength: Int, _ existingEnvelope: UnsafePointer<UInt8>?, _ existingEnvelopeLength: Int, _ json: UnsafePointer<UInt8>?, _ jsonLength: Int) -> NvBuffer
+
 @_silgen_name("nv_free_buffer")
 private func nvFreeBuffer(_ buffer: NvBuffer)
 
@@ -41,6 +50,47 @@ enum VaultCore {
         let result = password.withCString { passwordPointer in
             envelope.withUnsafeBytes { bytes in
                 nvDecryptJSON(passwordPointer, bytes.bindMemory(to: UInt8.self).baseAddress, envelope.count)
+            }
+        }
+        return try data(from: result)
+    }
+
+    static func deriveKey(envelope: Data, password: String) throws -> Data {
+        let result = password.withCString { passwordPointer in
+            envelope.withUnsafeBytes { bytes in
+                nvDeriveVaultKey(passwordPointer, bytes.bindMemory(to: UInt8.self).baseAddress, envelope.count)
+            }
+        }
+        return try data(from: result)
+    }
+
+    static func decrypt(envelope: Data, key: Data) throws -> Data {
+        let result = key.withUnsafeBytes { keyBytes in
+            envelope.withUnsafeBytes { envelopeBytes in
+                nvDecryptJSONWithKey(
+                    keyBytes.bindMemory(to: UInt8.self).baseAddress,
+                    key.count,
+                    envelopeBytes.bindMemory(to: UInt8.self).baseAddress,
+                    envelope.count
+                )
+            }
+        }
+        return try data(from: result)
+    }
+
+    static func reencrypt(json: Data, existingEnvelope: Data, key: Data) throws -> Data {
+        let result = key.withUnsafeBytes { keyBytes in
+            existingEnvelope.withUnsafeBytes { envelopeBytes in
+                json.withUnsafeBytes { jsonBytes in
+                    nvReencryptJSONWithKey(
+                        keyBytes.bindMemory(to: UInt8.self).baseAddress,
+                        key.count,
+                        envelopeBytes.bindMemory(to: UInt8.self).baseAddress,
+                        existingEnvelope.count,
+                        jsonBytes.bindMemory(to: UInt8.self).baseAddress,
+                        json.count
+                    )
+                }
             }
         }
         return try data(from: result)
