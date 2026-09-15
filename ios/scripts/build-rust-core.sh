@@ -9,6 +9,6 @@ else
 fi
 
 cargo build --manifest-path "${REPOSITORY_ROOT}/Cargo.toml" --release --target "${RUST_TARGET}"
-OUTPUT_DIRECTORY="${SRCROOT}/build/rust/${CURRENT_ARCH}"
+OUTPUT_DIRECTORY="${SRCROOT}/build/rust/${PLATFORM_NAME}"
 mkdir -p "${OUTPUT_DIRECTORY}"
 cp "${REPOSITORY_ROOT}/target/${RUST_TARGET}/release/libnoirvault.a" "${OUTPUT_DIRECTORY}/libnoirvault.a"
