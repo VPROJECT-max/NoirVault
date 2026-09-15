@@ -117,10 +117,8 @@ enum PasswordGenerator {
             password.rangeOfCharacter(from: CharacterSet.alphanumerics.inverted) != nil,
         ].filter { $0 }.count
 
-        switch (password.count, categories) {
-        case (let length, let count) where length >= 16 && count >= 3: "Strong"
-        case (let length, let count) where length >= 10 && count >= 2: "Good"
-        default: "Weak"
-        }
+        if password.count >= 16 && categories >= 3 { return "Strong" }
+        if password.count >= 10 && categories >= 2 { return "Good" }
+        return "Weak"
     }
 }

@@ -153,19 +153,19 @@ final class VaultStore {
     }
 
     private func coordinateRead(at url: URL) throws -> Data {
-        var capturedError: Error?
+        var capturedError: NSError?
         var data = Data()
         NSFileCoordinator().coordinate(readingItemAt: url, options: [], error: &capturedError) { coordinatedURL in
-            do { data = try Data(contentsOf: coordinatedURL) } catch { capturedError = error }
+            do { data = try Data(contentsOf: coordinatedURL) } catch { capturedError = error as NSError }
         }
         if let capturedError { throw capturedError }
         return data
     }
 
     private func coordinateWrite(in directory: URL, work: (URL) throws -> Void) throws {
-        var capturedError: Error?
+        var capturedError: NSError?
         NSFileCoordinator().coordinate(writingItemAt: directory, options: .forMerging, error: &capturedError) { coordinatedURL in
-            do { try work(coordinatedURL) } catch { capturedError = error }
+            do { try work(coordinatedURL) } catch { capturedError = error as NSError }
         }
         if let capturedError { throw capturedError }
     }
