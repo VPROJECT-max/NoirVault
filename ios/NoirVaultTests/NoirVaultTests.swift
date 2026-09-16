@@ -1,9 +1,123 @@
 import XCTest
 import CryptoKit
 import Security
+import AuthenticationServices
 @testable import NoirVault
 
 final class NoirVaultTests: XCTestCase {
+    func testAuthenticatorSavesWithoutPasswordAndRoundTrips() throws {
+        let item = VaultItem(title: "GitHub", description: "alice", totpSecret: "JBSWY3DPEHPK3PXP", itemType: .authenticator, content: "", website: "github.com", notes: "Recovery codes stored separately", isFavorite: true)
+        XCTAssertNil(item.validationMessage)
+        let decoded = try JSONDecoder().decode(VaultItem.self, from: JSONEncoder().encode(item))
+        XCTAssertEqual(decoded, item)
+        XCTAssertTrue(decoded.hasTOTP)
+        XCTAssertTrue(decoded.content.isEmpty)
+    }
+
+    func testAuthenticatorRejectsMissingOrInvalidSecret() {
+        var item = VaultItem(title: "GitHub", itemType: .authenticator, content: "")
+        XCTAssertNotNil(item.validationMessage)
+        item.totpSecret = "123456"
+        XCTAssertNotNil(item.validationMessage)
+        item.totpSecret = "JBSWY3DPEHPK3PXP"
+        XCTAssertNil(item.validationMessage)
+    }
+
+    func testOldVaultItemsDecodeWithDefaults() throws {
+        let json = Data(#"{"id":"legacy","title":"Old login","item_type":"password","content":"secret"}"#.utf8)
+        let item = try JSONDecoder().decode(VaultItem.self, from: json)
+        XCTAssertEqual(item.website, "")
+        XCTAssertEqual(item.notes, "")
+        XCTAssertFalse(item.isFavorite)
+        XCTAssertEqual(item.tags, [])
+    }
+
+    func testStandaloneAuthenticatorIndexesOnlyOTPIdentity() {
+        let item = VaultItem(title: "GitHub", totpSecret: "JBSWY3DPEHPK3PXP", itemType: .authenticator, content: "")
+        let identities = CredentialIdentityIndexer.identities(for: VaultData(items: [item]))
+        XCTAssertEqual(identities.count, 1)
+        XCTAssertTrue(identities.first is ASOneTimeCodeCredentialIdentity)
+    }
+
+    func testLoginIdentityUsesWebsiteInsteadOfDisplayName() {
+        let item = VaultItem(title: "Work account", description: "alice", itemType: .password, content: "secret", website: "https://example.com/login")
+        XCTAssertEqual(CredentialIdentityIndexer.passwordIdentity(for: item).serviceIdentifier.identifier, "example.com")
+    }
+
+    func testWebsiteRejectsNonWebSchemes() {
+        let item = VaultItem(title: "Bad URL", itemType: .password, content: "secret", website: "javascript://alert")
+        XCTAssertNil(item.websiteURL)
+        XCTAssertNotNil(item.validationMessage)
+    }
+
+    func testSearchUsesAllTermsAndNeverSearchesPasswords() {
+        let item = VaultItem(title: "Work", description: "alice", tags: ["Team"], itemType: .password, content: "hidden-password", website: "example.com")
+        XCTAssertEqual(VaultSearch.items([item], query: " ALICE example ").count, 1)
+        XCTAssertTrue(VaultSearch.items([item], query: "hidden-password").isEmpty)
+        XCTAssertTrue(VaultSearch.items([item], query: "alice missing").isEmpty)
+    }
+
+    func testFiltersAndFavoritesAreIndependentFromCodes() {
+        let login = VaultItem(title: "Login", itemType: .password, content: "password")
+        let code = VaultItem(title: "Code", totpSecret: "JBSWY3DPEHPK3PXP", itemType: .authenticator, content: "", isFavorite: true)
+        XCTAssertEqual(VaultSearch.items([login, code], query: "", codesOnly: true), [code])
+        XCTAssertEqual(VaultSearch.items([login, code], query: "", filter: .favorites), [code])
+        XCTAssertEqual(VaultSearch.items([login, code], query: "", filter: .all).count, 2)
+    }
+
+    func testConfigurableGeneratorIncludesEverySelectedGroup() throws {
+        var options = PasswordGenerator.Options()
+        options.length = 32
+        for _ in 0..<30 {
+            let password = try XCTUnwrap(PasswordGenerator.make(options: options))
+            XCTAssertEqual(password.count, 32)
+            for group in options.groups { XCTAssertTrue(password.contains { group.contains($0) }) }
+        }
+        options.uppercase = false; options.lowercase = false; options.symbols = false
+        XCTAssertTrue(try XCTUnwrap(PasswordGenerator.make(options: options)).allSatisfy(\.isNumber))
+        options.numbers = false
+        XCTAssertNil(PasswordGenerator.make(options: options))
+    }
+
+    @MainActor
+    func testFailedWriteDoesNotChangeVisibleVault() throws {
+        let session = VaultSession(unlocked: .fixture)
+        let original = session.data
+        var changed = original
+        changed.items[0].content = "new-password"
+        XCTAssertThrowsError(try session.commit(changed) { _, _ in throw VaultStoreError.usbUnavailable })
+        XCTAssertEqual(session.data, original)
+        XCTAssertFalse(session.isLocked)
+        XCTAssertNil(session.lastSavedAt)
+    }
+
+    @MainActor
+    func testSuccessfulWriteCommitsExactlyTheCandidate() throws {
+        let session = VaultSession(unlocked: .fixture)
+        var changed = session.data
+        changed.items[0].isFavorite = true
+        try session.commit(changed) { data, unlocked in
+            var result = unlocked; result.data = data; return result
+        }
+        XCTAssertEqual(session.data, changed)
+        XCTAssertNotNil(session.lastSavedAt)
+        session.lock()
+        XCTAssertThrowsError(try session.commit(changed) { _, _ in XCTFail("Locked session wrote data"); return .fixture })
+    }
+
+    @MainActor
+    func testNonSecretPreferencesSurviveNewSession() throws {
+        let name = "NoirVaultTests.\(UUID().uuidString)"
+        let preferences = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { preferences.removePersistentDomain(forName: name) }
+        let first = VaultSession(preferences: preferences)
+        first.autoLockSeconds = 300
+        first.requireBiometricsToCopy = true
+        let second = VaultSession(preferences: preferences)
+        XCTAssertEqual(second.autoLockSeconds, 300)
+        XCTAssertTrue(second.requireBiometricsToCopy)
+    }
+
     func testPasswordGeneratorCreatesRequestedLength() {
         XCTAssertEqual(PasswordGenerator.make(length: 24).count, 24)
     }

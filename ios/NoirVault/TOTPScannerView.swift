@@ -12,31 +12,48 @@ struct TOTPScannerView: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: ScannerViewController, context: Context) {}
+
+    static func dismantleUIViewController(_ uiViewController: ScannerViewController, coordinator: ()) {
+        uiViewController.stop()
+    }
+}
+
+private enum ScannerError: LocalizedError {
+    case permissionDenied, unavailable
+    var errorDescription: String? {
+        switch self {
+        case .permissionDenied: "Camera access is off. Enable it for NoirVault in iOS Settings, or enter the setup key manually."
+        case .unavailable: "The camera is unavailable. Enter the authenticator setup key manually."
+        }
+    }
 }
 
 final class ScannerViewController: UIViewController, @preconcurrency AVCaptureMetadataOutputObjectsDelegate {
     var onResult: ((Result<String, Error>) -> Void)?
     private let session = AVCaptureSession()
     private var finished = false
+    private let captureQueue = DispatchQueue(label: "com.Tokyo.noirvault.scanner")
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
         AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
-            guard let self else { return }
-            if granted { self.configure() }
-            else { self.finish(.failure(TOTPError.invalidSecret)) }
+            Task { @MainActor [weak self] in
+                guard let self, !self.finished else { return }
+                if granted { self.configure() }
+                else { self.finish(.failure(ScannerError.permissionDenied)) }
+            }
         }
     }
 
     private func configure() {
         do {
-            guard let camera = AVCaptureDevice.default(for: .video) else { throw TOTPError.invalidSecret }
+            guard let camera = AVCaptureDevice.default(for: .video) else { throw ScannerError.unavailable }
             let input = try AVCaptureDeviceInput(device: camera)
-            guard session.canAddInput(input) else { throw TOTPError.invalidSecret }
+            guard session.canAddInput(input) else { throw ScannerError.unavailable }
             session.addInput(input)
             let output = AVCaptureMetadataOutput()
-            guard session.canAddOutput(output) else { throw TOTPError.invalidSecret }
+            guard session.canAddOutput(output) else { throw ScannerError.unavailable }
             session.addOutput(output)
             output.setMetadataObjectsDelegate(self, queue: .main)
             output.metadataObjectTypes = [.qr]
@@ -44,7 +61,7 @@ final class ScannerViewController: UIViewController, @preconcurrency AVCaptureMe
             preview.videoGravity = .resizeAspectFill
             preview.frame = view.bounds
             view.layer.addSublayer(preview)
-            DispatchQueue.global(qos: .userInitiated).async { [session] in session.startRunning() }
+            captureQueue.async { [session] in session.startRunning() }
         } catch {
             finish(.failure(error))
         }
@@ -62,8 +79,12 @@ final class ScannerViewController: UIViewController, @preconcurrency AVCaptureMe
 
     private func finish(_ result: Result<String, Error>) {
         guard !finished else { return }
+        stop()
+        onResult?(result)
+    }
+
+    func stop() {
         finished = true
-        session.stopRunning()
-        DispatchQueue.main.async { self.onResult?(result) }
+        captureQueue.async { [session] in if session.isRunning { session.stopRunning() } }
     }
 }

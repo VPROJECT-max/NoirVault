@@ -283,6 +283,9 @@ fn main() {
                 tags,
                 item_type: item_type.to_string(),
                 content: content.to_string(),
+                website: String::new(),
+                notes: String::new(),
+                favorite: false,
             };
             s.vault_data.items.push(new_item);
             save_vault_to_disk(&s);

@@ -99,6 +99,8 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
     }
 
     private func completePassword(_ item: VaultItem) {
+        guard item.itemType == .password else { cancel(code: .credentialIdentityNotFound); return }
+        do { try store.probe() } catch { showFailure(error); return }
         extensionContext.completeRequest(
             withSelectedCredential: ASPasswordCredential(user: item.description, password: item.content),
             completionHandler: nil
@@ -106,6 +108,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
     }
 
     private func completeOTP(_ item: VaultItem) {
+        do { try store.probe() } catch { showFailure(error); return }
         guard let configuration = item.totpConfiguration else { cancel(code: .credentialIdentityNotFound); return }
         extensionContext.completeOneTimeCodeRequest(
             using: ASOneTimeCodeCredential(code: TOTPGenerator.code(configuration: configuration)),
@@ -129,8 +132,8 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
             cancel(code: .credentialIdentityNotFound)
             return
         }
-        updatedVault.data.items[index] = try VaultItem.passkey(assertion.updatedMaterial)
-        updatedVault.data.items[index].id = item.id
+        // Keep user-edited title, notes, website, tags and favorite status during sign-counter updates.
+        updatedVault.data.items[index].content = try VaultItem.passkey(assertion.updatedMaterial).content
         unlocked = try store.save(updatedVault.data, using: updatedVault)
         let credential = ASPasskeyAssertionCredential(
             userHandle: assertion.updatedMaterial.userHandle,

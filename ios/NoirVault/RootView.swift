@@ -58,9 +58,22 @@ struct RootView: View {
             Text(errorMessage ?? "")
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase != .active { session.lock() }
+            if phase == .background { session.lock() }
+            if phase == .active { session.touch() }
         }
-        .simultaneousGesture(TapGesture().onEnded { session.touch() })
+        .overlay {
+            if scenePhase != .active {
+                ZStack {
+                    NoirTheme.ink.ignoresSafeArea()
+                    Label("NoirVault", systemImage: "lock.shield.fill").font(.title2.bold()).foregroundStyle(NoirTheme.violet)
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UITextField.textDidChangeNotification)) { _ in session.touch() }
+        .onReceive(NotificationCenter.default.publisher(for: UITextView.textDidChangeNotification)) { _ in session.touch() }
+        .onChange(of: session.authenticationError) { _, value in
+            if let value { errorMessage = value; session.authenticationError = nil }
+        }
         .task {
             let hasStoredPairing = store.isConfigured
             var probeError: VaultStoreError?
@@ -81,7 +94,8 @@ struct RootView: View {
         .task(id: session.isLocked) {
             guard !session.isLocked else { return }
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(2))
+                do { try await Task.sleep(for: .seconds(2)) } catch { return }
+                guard !Task.isCancelled, !session.isLocked else { return }
                 if session.shouldAutoLock() {
                     session.lock()
                     return
@@ -106,6 +120,7 @@ private struct USBSetupView: View {
     @State private var masterPassword = ""
     @State private var confirmation = ""
     @State private var showFolderPicker = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ScrollView {
@@ -114,7 +129,7 @@ private struct USBSetupView: View {
                 Image(systemName: "lock.doc.fill")
                     .font(.system(size: 54, weight: .semibold))
                     .foregroundStyle(NoirTheme.violet)
-                    .symbolEffect(.pulse, options: .repeating)
+                    .symbolEffect(.pulse, options: .repeating, isActive: !reduceMotion)
                 Text("A vault that leaves with you.")
                     .font(.largeTitle.bold())
                 Text("Choose a folder on your NoirVault USB. Your encrypted vault, files, and secrets remain there—not on this iPhone.")

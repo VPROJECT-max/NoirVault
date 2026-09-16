@@ -19,6 +19,12 @@ pub struct VaultItem {
     pub tags: Vec<String>,
     pub item_type: String, // "password" or "file" or "note" or "ssh_key"
     pub content: String, // plain text password, or base64 encoded file
+    #[serde(default)]
+    pub website: String,
+    #[serde(default)]
+    pub notes: String,
+    #[serde(default)]
+    pub favorite: bool,
 }
 
 impl VaultData {

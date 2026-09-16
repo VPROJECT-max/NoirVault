@@ -10,6 +10,7 @@ enum VaultStoreError: LocalizedError, Equatable {
     case attachmentTooLarge
     case locked
     case keychainFailure(OSStatus)
+    case vaultAlreadyExists
 
     var errorDescription: String? {
         switch self {
@@ -20,6 +21,7 @@ enum VaultStoreError: LocalizedError, Equatable {
         case .attachmentTooLarge: "Files must be 50 MB or smaller."
         case .locked: "Unlock NoirVault before saving."
         case .keychainFailure: "NoirVault could not securely save its USB pairing."
+        case .vaultAlreadyExists: "This folder already contains a vault. Choose an empty folder to create a new one; your existing vault has not been changed."
         }
     }
 }
@@ -46,6 +48,10 @@ final class VaultStore {
     func pair(with directory: URL) throws {
         guard directory.startAccessingSecurityScopedResource() else { throw VaultStoreError.usbUnavailable }
         defer { directory.stopAccessingSecurityScopedResource() }
+
+        guard !FileManager.default.fileExists(atPath: directory.appendingPathComponent(Self.vaultFilename).path) else {
+            throw VaultStoreError.vaultAlreadyExists
+        }
 
         let secret = try randomSecret()
         let marker = PairingMarker(secret: secret)

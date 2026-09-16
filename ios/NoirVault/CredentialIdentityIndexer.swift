@@ -35,10 +35,10 @@ enum CredentialIdentityIndexer {
         for item in vault.items {
             if item.itemType == .password {
                 result.append(passwordIdentity(for: item))
-                if item.hasTOTP { result.append(oneTimeCodeIdentity(for: item)) }
             } else if let passkey = passkeyIdentity(for: item) {
                 result.append(passkey)
             }
+            if item.hasTOTP { result.append(oneTimeCodeIdentity(for: item)) }
         }
         return result
     }
@@ -55,7 +55,7 @@ enum CredentialIdentityIndexer {
     }
 
     private static func serviceIdentifier(for item: VaultItem) -> ASCredentialServiceIdentifier {
-        let candidate = item.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let candidate = (item.websiteURL?.host ?? item.title).trimmingCharacters(in: .whitespacesAndNewlines)
         if let url = URL(string: candidate), let host = url.host {
             return ASCredentialServiceIdentifier(identifier: host, type: .domain)
         }

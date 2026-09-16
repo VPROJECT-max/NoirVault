@@ -4,6 +4,30 @@ use noirvault::crypto::{
 };
 
 #[test]
+fn standalone_authenticator_and_metadata_survive_portable_roundtrip() {
+    let payload = br#"{"items":[{"id":"otp-1","title":"GitHub","description":"alice","totp_secret":"JBSWY3DPEHPK3PXP","tags":["work"],"item_type":"authenticator","content":"","website":"github.com","notes":"recovery elsewhere","favorite":true}],"trusted_machines":[]}"#;
+    let vault = noirvault::vault::VaultData::from_bytes(payload).unwrap();
+    let serialized = vault.to_bytes();
+    let restored = noirvault::vault::VaultData::from_bytes(&serialized).unwrap();
+    let item = &restored.items[0];
+    assert_eq!(item.item_type, "authenticator");
+    assert!(item.content.is_empty());
+    assert_eq!(item.website, "github.com");
+    assert_eq!(item.notes, "recovery elsewhere");
+    assert!(item.favorite);
+    assert_eq!(item.totp_secret, "JBSWY3DPEHPK3PXP");
+}
+
+#[test]
+fn legacy_items_default_new_metadata_without_losing_secrets() {
+    let payload = br#"{"items":[{"id":"1","title":"Old","item_type":"password","content":"secret"}]}"#;
+    let vault = noirvault::vault::VaultData::from_bytes(payload).unwrap();
+    assert_eq!(vault.items[0].content, "secret");
+    assert!(!vault.items[0].favorite);
+    assert!(vault.items[0].website.is_empty());
+}
+
+#[test]
 fn v2_round_trip_uses_only_the_master_password() {
     let payload = br#"{"items":[],"trusted_machines":[]}"#;
 

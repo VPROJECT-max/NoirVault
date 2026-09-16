@@ -6,6 +6,8 @@ struct CredentialProviderView: View {
     let items: [VaultItem]
     let onSelect: (VaultItem) -> Void
     let onCancel: () -> Void
+    @State private var query = ""
+    private var filteredItems: [VaultItem] { VaultSearch.items(items, query: query) }
 
     var body: some View {
         NavigationStack {
@@ -21,13 +23,13 @@ struct CredentialProviderView: View {
                     }
                     .padding(28)
                 } else {
-                    List(items) { item in
+                    List(filteredItems) { item in
                         Button { onSelect(item) } label: {
                             HStack(spacing: 14) {
                                 Image(systemName: item.itemType.symbol).foregroundStyle(NoirTheme.mint)
                                 VStack(alignment: .leading) {
                                     Text(item.title).font(.headline)
-                                    Text(item.description).font(.caption).foregroundStyle(NoirTheme.muted)
+                                    Text(item.subtitle).font(.caption).foregroundStyle(NoirTheme.muted)
                                 }
                                 Spacer()
                                 if item.hasTOTP { Image(systemName: "timer").foregroundStyle(NoirTheme.violet) }
@@ -38,6 +40,8 @@ struct CredentialProviderView: View {
                         .buttonStyle(.plain)
                     }
                     .scrollContentBackground(.hidden)
+                    .searchable(text: $query, prompt: "Search accounts")
+                    .overlay { if filteredItems.isEmpty { ContentUnavailableView.search(text: query) } }
                 }
             }
             .navigationTitle(title)
