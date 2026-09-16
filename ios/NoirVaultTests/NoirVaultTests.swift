@@ -2,9 +2,74 @@ import XCTest
 import CryptoKit
 import Security
 import AuthenticationServices
+import SwiftUI
+import UIKit
 @testable import NoirVault
 
 final class NoirVaultTests: XCTestCase {
+    @MainActor
+    func testPendingSaveLocksAndRetainsOnlyCiphertextUntilAcknowledged() {
+        let session = VaultSession(unlocked: .fixture)
+        let pending = PendingVaultSave(envelope: Data([3, 4]), originalEnvelope: Data([1, 2]))
+        session.retainPendingSave(pending)
+        XCTAssertTrue(session.isLocked)
+        XCTAssertFalse(session.debugHasDerivedKey)
+        XCTAssertTrue(session.data.items.isEmpty)
+        XCTAssertEqual(session.pendingSave, pending)
+        session.finishPendingSave(id: UUID())
+        XCTAssertEqual(session.pendingSave, pending)
+        session.finishPendingSave(id: pending.id)
+        XCTAssertNil(session.pendingSave)
+    }
+
+    @MainActor
+    func testPendingSaveSurvivesBackgroundLockWithoutPlaintext() {
+        let session = VaultSession(unlocked: .fixture)
+        let pending = PendingVaultSave(envelope: Data([3]), originalEnvelope: Data([1]))
+        session.retainPendingSave(pending)
+        session.lock()
+        XCTAssertEqual(session.pendingSave, pending)
+        XCTAssertTrue(session.data.items.isEmpty)
+        session.discardPendingSave()
+        XCTAssertNil(session.pendingSave)
+    }
+
+    @MainActor
+    func testRenderExperienceScreens() throws {
+        let code = VaultItem(title: "GitHub", description: "alex@example.com", totpSecret: "JBSWY3DPEHPK3PXP", tags: ["Work"], itemType: .authenticator, content: "", isFavorite: true)
+        let login = VaultItem(title: "Personal email", description: "alex@example.com", itemType: .password, content: "synthetic-fixture-password", website: "example.com")
+        let vault = UnlockedVault(data: VaultData(items: [code, login, VaultItem(title: "Recovery notes", itemType: .note, content: "Synthetic test note")]), envelope: Data([1]), key: Data(repeating: 2, count: 32))
+        let session = VaultSession(unlocked: vault)
+        session.requireBiometricsToCopy = false
+        try capture(VaultHomeView(store: VaultStore(), errorMessage: .constant(nil)).environmentObject(session), named: "vault-library")
+        try capture(RecordEditorView(type: .authenticator, item: code, onSave: { _ in }).environmentObject(session), named: "authenticator-editor")
+        try capture(NavigationStack { RecordDetailView(item: code, onEdit: {}, onFavorite: {}, onDelete: {}) }.environmentObject(session), named: "authenticator-detail")
+        try capture(PasswordGeneratorView(), named: "password-generator")
+        try capture(RecordEditorView(type: .authenticator, item: code, onSave: { _ in }).environmentObject(session).environment(\.dynamicTypeSize, .accessibility2), named: "authenticator-large-text")
+    }
+
+    @MainActor
+    private func capture<V: View>(_ view: V, named name: String) throws {
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(x: 0, y: 0, width: 393, height: 852)
+        window.overrideUserInterfaceStyle = .dark
+        let controller = UIHostingController(rootView: view.tint(NoirTheme.violet).preferredColorScheme(.dark))
+        window.rootViewController = controller
+        window.makeKeyAndVisible()
+        controller.view.setNeedsLayout()
+        controller.view.layoutIfNeeded()
+        RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+        let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
+            window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        }
+        let attachment = XCTAttachment(image: image)
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        window.isHidden = true
+    }
+
     func testAuthenticatorSavesWithoutPasswordAndRoundTrips() throws {
         let item = VaultItem(title: "GitHub", description: "alice", totpSecret: "JBSWY3DPEHPK3PXP", itemType: .authenticator, content: "", website: "github.com", notes: "Recovery codes stored separately", isFavorite: true)
         XCTAssertNil(item.validationMessage)

@@ -202,7 +202,7 @@ struct PasswordGeneratorView: View {
                     Button("Generate another", systemImage: "arrow.clockwise") { generate() }
                     Button(copied ? "Copied for 15 seconds" : "Copy password", systemImage: copied ? "checkmark" : "doc.on.doc") {
                         SecureClipboard.copy(password); copied = true
-                    }
+                    }.disabled(options.groups.isEmpty)
                 }
                 Section("Length") { Stepper("\(options.length) characters", value: $options.length, in: 8...128) }
                 Section("Include") {

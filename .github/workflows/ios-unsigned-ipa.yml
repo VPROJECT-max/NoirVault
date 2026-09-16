@@ -44,7 +44,26 @@ jobs:
             -configuration Debug \
             -destination "platform=iOS Simulator,id=$DEVICE_ID" \
             -derivedDataPath ios/build/tests \
+            -resultBundlePath ios/build/NoirVault-tests.xcresult \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_STYLE=Manual
+
+      - name: Export rendered experience screenshots
+        if: always()
+        run: |
+          if [ -d ios/build/NoirVault-tests.xcresult ]; then
+            xcrun xcresulttool export attachments --path ios/build/NoirVault-tests.xcresult --output-path ios/build/screenshots
+          fi
+
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: NoirVault-test-evidence
+          path: |
+            ios/build/screenshots
+            ios/build/NoirVault-tests.xcresult
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Build unsigned iPhone app
         run: |

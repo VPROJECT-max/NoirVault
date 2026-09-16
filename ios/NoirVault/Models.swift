@@ -1,7 +1,7 @@
 import CryptoKit
 import Foundation
 
-enum VaultItemType: String, Codable, CaseIterable, Identifiable {
+enum VaultItemType: String, Codable, CaseIterable, Identifiable, Sendable {
     case password
     case authenticator
     case note
@@ -33,7 +33,7 @@ enum VaultItemType: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-struct VaultItem: Codable, Identifiable, Equatable, Hashable {
+struct VaultItem: Codable, Identifiable, Equatable, Hashable, Sendable {
     var id: String
     var title: String
     var description: String
@@ -163,7 +163,7 @@ enum VaultSearch {
             return filter.includes(item) && (!codesOnly || item.hasTOTP)
                 && terms.allSatisfy { searchable.localizedStandardContains($0) }
         }
-        if sort == .newest { return matches.reversed() }
+        if sort == .newest { return Array(matches.reversed()) }
         return matches.sorted {
             if sort == .favorites && $0.isFavorite != $1.isFavorite { return $0.isFavorite }
             let comparison = $0.title.localizedStandardCompare($1.title)
@@ -172,7 +172,7 @@ enum VaultSearch {
     }
 }
 
-struct VaultData: Codable, Equatable {
+struct VaultData: Codable, Equatable, Sendable {
     var items: [VaultItem] = []
     var trustedMachines: [String] = []
 

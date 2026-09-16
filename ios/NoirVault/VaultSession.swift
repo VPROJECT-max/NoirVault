@@ -12,6 +12,7 @@ final class VaultSession: ObservableObject {
     @Published var autoLockSeconds: Int { didSet { preferences.set(autoLockSeconds, forKey: "autoLockSeconds") } }
     @Published private(set) var lastSavedAt: Date?
     @Published var authenticationError: String?
+    @Published private(set) var pendingSave: PendingVaultSave?
     private let preferences: UserDefaults
     private var unlocked: UnlockedVault?
     private var lastInteraction = Date()
@@ -79,15 +80,41 @@ final class VaultSession: ObservableObject {
         var candidate = data
         if let index = candidate.items.firstIndex(where: { $0.id == item.id }) { candidate.items[index] = item }
         else { candidate.items.append(item) }
-        try commit(candidate, write: store.save)
+        try commitRetainingEncryptedChanges(candidate, using: store)
     }
 
     func remove(_ item: VaultItem, using store: VaultStore) throws {
         var candidate = data
         candidate.items.removeAll { $0.id == item.id }
-        try commit(candidate, write: store.save)
+        try commitRetainingEncryptedChanges(candidate, using: store)
         if selectedItemID == item.id { selectedItemID = nil }
     }
+
+    private func commitRetainingEncryptedChanges(_ candidate: VaultData, using store: VaultStore) throws {
+        guard let unlocked else { throw VaultStoreError.locked }
+        let pending = try store.prepareSave(candidate, using: unlocked)
+        do {
+            try commit(candidate) { data, vault in
+                try store.persist(pending)
+                return UnlockedVault(data: data, envelope: pending.envelope, key: vault.key)
+            }
+        } catch {
+            retainPendingSave(pending)
+            throw error
+        }
+    }
+
+    func retainPendingSave(_ pending: PendingVaultSave) {
+        pendingSave = pending
+        lock()
+    }
+
+    func finishPendingSave(id: UUID) {
+        guard pendingSave?.id == id else { return }
+        pendingSave = nil
+    }
+
+    func discardPendingSave() { pendingSave = nil }
 
     func authorizeSecretAccess() async -> Bool {
         guard !isLocked else { return false }

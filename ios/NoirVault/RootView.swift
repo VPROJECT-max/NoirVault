@@ -26,10 +26,24 @@ struct RootView: View {
     let store: VaultStore
     @State private var errorMessage: String?
     @State private var launchRoute: VaultLaunchRoute = .checking
+    @State private var pendingError: String?
+    @State private var confirmingDiscard = false
+    @State private var isRetryingPending = false
 
     var body: some View {
         Group {
-            if session.isLocked {
+            if session.pendingSave != nil {
+                VStack(spacing: 24) {
+                    Image(systemName: "externaldrive.badge.exclamationmark").font(.system(size: 54)).foregroundStyle(NoirTheme.violet)
+                    Text("Reconnect to finish saving").font(.title2.bold())
+                    Text("Your changes are encrypted in memory. Connect the same USB and NoirVault will save them automatically. Keep this app open until saving finishes.")
+                        .multilineTextAlignment(.center).foregroundStyle(NoirTheme.muted)
+                    ProgressView("Waiting for your USB…")
+                    if let pendingError { Text(pendingError).font(.footnote).foregroundStyle(.orange) }
+                    Button("Discard pending changes", role: .destructive) { confirmingDiscard = true }
+                        .disabled(isRetryingPending)
+                }.padding(28)
+            } else if session.isLocked {
                 switch launchRoute {
                 case .checking:
                     ProgressView("Checking paired USB…")
@@ -73,6 +87,33 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: UITextView.textDidChangeNotification)) { _ in session.touch() }
         .onChange(of: session.authenticationError) { _, value in
             if let value { errorMessage = value; session.authenticationError = nil }
+        }
+        .confirmationDialog("Discard changes that have not been saved?", isPresented: $confirmingDiscard, titleVisibility: .visible) {
+            Button("Discard changes", role: .destructive) { session.discardPendingSave(); pendingError = nil }
+            Button("Keep waiting", role: .cancel) {}
+        } message: { Text("Your existing USB vault will remain unchanged.") }
+        .task(id: session.pendingSave?.id) {
+            guard let pending = session.pendingSave else { return }
+            pendingError = nil
+            while !Task.isCancelled {
+                do { try await Task.sleep(for: .seconds(2)) } catch { return }
+                guard !Task.isCancelled, session.pendingSave?.id == pending.id else { return }
+                guard scenePhase == .active, !confirmingDiscard else { continue }
+                isRetryingPending = true
+                do {
+                    let vaultStore = store
+                    try await Task.detached { try vaultStore.persist(pending) }.value
+                    isRetryingPending = false
+                    guard session.pendingSave?.id == pending.id else { return }
+                    session.finishPendingSave(id: pending.id)
+                    errorMessage = "Your changes are saved on the USB. You can safely close NoirVault or unlock to continue."
+                    return
+                } catch let error as VaultStoreError {
+                    isRetryingPending = false
+                    pendingError = error.localizedDescription
+                    if error == .vaultChanged { return }
+                } catch { isRetryingPending = false; pendingError = error.localizedDescription }
+            }
         }
         .task {
             let hasStoredPairing = store.isConfigured
@@ -121,6 +162,8 @@ private struct USBSetupView: View {
     @State private var confirmation = ""
     @State private var showFolderPicker = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var openingExisting = false
+    @State private var isWorking = false
 
     var body: some View {
         ScrollView {
@@ -135,25 +178,35 @@ private struct USBSetupView: View {
                 Text("Choose a folder on your NoirVault USB. Your encrypted vault, files, and secrets remain there—not on this iPhone.")
                     .foregroundStyle(NoirTheme.muted)
                 VStack(spacing: 14) {
-                    SecureField("Create master password", text: $masterPassword)
-                        .textContentType(.newPassword)
-                    SecureField("Confirm master password", text: $confirmation)
-                        .textContentType(.newPassword)
+                    Picker("Vault setup", selection: $openingExisting) {
+                        Text("Create new").tag(false)
+                        Text("Open existing").tag(true)
+                    }.pickerStyle(.segmented)
+                    SecureField(openingExisting ? "Existing master password" : "Create master password", text: $masterPassword)
+                        .textContentType(openingExisting ? .password : .newPassword)
+                    if !openingExisting {
+                        SecureField("Confirm master password", text: $confirmation).textContentType(.newPassword)
+                        Text("Use at least 12 characters. Keep this password somewhere safe; NoirVault cannot reset it.")
+                            .font(.footnote).foregroundStyle(NoirTheme.muted)
+                    }
                     Button {
-                        guard !masterPassword.isEmpty, masterPassword == confirmation else {
-                            errorMessage = "Enter matching master passwords before choosing your USB folder."
+                        guard !masterPassword.isEmpty, openingExisting || (masterPassword.count >= 12 && masterPassword == confirmation) else {
+                            errorMessage = "Use matching master passwords with at least 12 characters."
                             return
                         }
                         showFolderPicker = true
                     } label: {
-                        Label("Choose NoirVault USB folder", systemImage: "externaldrive.fill")
-                            .frame(maxWidth: .infinity)
+                        HStack {
+                            if isWorking { ProgressView() }
+                            Text(isWorking ? "Opening your vault…" : "Choose USB folder")
+                        }.frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(NoirTheme.violet)
+                    .disabled(isWorking || masterPassword.isEmpty || (!openingExisting && (masterPassword.count < 12 || masterPassword != confirmation)))
                 }
                 .noirCard()
-                Text("NoirVault creates a paired marker and an encrypted vault in the selected USB folder. Removing that drive locks the app immediately.")
+                Text(openingExisting ? "Choose the folder containing noirvault.vault. Your master password is verified before this iPhone is paired with it." : "Choose an empty folder on your USB. NoirVault will never replace an existing vault during setup.")
                     .font(.footnote)
                     .foregroundStyle(NoirTheme.muted)
             }
@@ -161,15 +214,23 @@ private struct USBSetupView: View {
         }
         .sheet(isPresented: $showFolderPicker) {
             USBFolderPicker { directory in
-                do {
-                    try store.pair(with: directory)
-                    let unlocked = try store.create(masterPassword: masterPassword)
-                    session.unlock(unlocked)
-                    onConfigured()
-                    masterPassword = ""
-                    confirmation = ""
-                } catch {
-                    errorMessage = error.localizedDescription
+                isWorking = true
+                let password = masterPassword
+                let existing = openingExisting
+                let vaultStore = store
+                Task { @MainActor in
+                    defer { isWorking = false }
+                    do {
+                        let unlocked = try await Task.detached(priority: .userInitiated) {
+                            if existing { return try vaultStore.openExisting(at: directory, masterPassword: password) }
+                            try vaultStore.pair(with: directory)
+                            return try vaultStore.create(masterPassword: password)
+                        }.value
+                        onConfigured()
+                        if UIApplication.shared.applicationState == .active { session.unlock(unlocked) }
+                        masterPassword = ""
+                        confirmation = ""
+                    } catch { errorMessage = error.localizedDescription }
                 }
             }
         }
@@ -202,7 +263,10 @@ private struct UnlockView: View {
                 .padding()
                 .background(NoirTheme.panel, in: RoundedRectangle(cornerRadius: 16))
             Button(action: unlock) {
-                isUnlocking ? AnyView(ProgressView()) : AnyView(Text("Unlock vault").frame(maxWidth: .infinity))
+                HStack {
+                    if isUnlocking { ProgressView() }
+                    Text(isUnlocking ? "Unlocking…" : "Unlock vault")
+                }.frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .tint(NoirTheme.violet)
@@ -218,15 +282,20 @@ private struct UnlockView: View {
     }
 
     private func unlock() {
+        guard !isUnlocking, !masterPassword.isEmpty else { return }
         isUnlocking = true
-        defer { isUnlocking = false }
-        do {
-            let unlocked = try store.load(masterPassword: masterPassword)
-            session.unlock(unlocked)
-            masterPassword = ""
-        } catch {
-            session.lock()
-            errorMessage = error.localizedDescription
+        let password = masterPassword
+        let vaultStore = store
+        Task { @MainActor in
+            defer { isUnlocking = false }
+            do {
+                let unlocked = try await Task.detached(priority: .userInitiated) { try vaultStore.load(masterPassword: password) }.value
+                guard UIApplication.shared.applicationState == .active else { return }
+                session.unlock(unlocked)
+                masterPassword = ""
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 }

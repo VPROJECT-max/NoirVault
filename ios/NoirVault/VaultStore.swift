@@ -11,6 +11,8 @@ enum VaultStoreError: LocalizedError, Equatable {
     case locked
     case keychainFailure(OSStatus)
     case vaultAlreadyExists
+    case vaultChanged
+    case authenticationFailed
 
     var errorDescription: String? {
         switch self {
@@ -22,11 +24,13 @@ enum VaultStoreError: LocalizedError, Equatable {
         case .locked: "Unlock NoirVault before saving."
         case .keychainFailure: "NoirVault could not securely save its USB pairing."
         case .vaultAlreadyExists: "This folder already contains a vault. Choose an empty folder to create a new one; your existing vault has not been changed."
+        case .vaultChanged: "The USB vault changed since it was opened. Unlock it again to load the latest version before making changes."
+        case .authenticationFailed: "The master password is incorrect, or this vault could not be authenticated."
         }
     }
 }
 
-struct UnlockedVault {
+struct UnlockedVault: Sendable {
     var data: VaultData
     var envelope: Data
     var key: Data
@@ -34,7 +38,14 @@ struct UnlockedVault {
     static let fixture = UnlockedVault(data: .fixture, envelope: Data([1]), key: Data(repeating: 2, count: 32))
 }
 
-final class VaultStore {
+/// Only ciphertext is retained while waiting for a USB; never the vault key or plaintext.
+struct PendingVaultSave: Identifiable, Equatable, Sendable {
+    let id = UUID()
+    let envelope: Data
+    let originalEnvelope: Data
+}
+
+final class VaultStore: Sendable {
     private static let bookmarkAccount = "usb-directory-bookmark"
     private static let pairingAccount = "usb-pairing-secret"
     private static let derivedKeyAccount = "vault-derived-key-v2"
@@ -53,10 +64,37 @@ final class VaultStore {
             throw VaultStoreError.vaultAlreadyExists
         }
 
+        try persistPairing(in: directory)
+    }
+
+    /// Re-enrollment proves possession of the master password before replacing a pairing marker.
+    func openExisting(at directory: URL, masterPassword: String) throws -> UnlockedVault {
+        guard directory.startAccessingSecurityScopedResource() else { throw VaultStoreError.usbUnavailable }
+        defer { directory.stopAccessingSecurityScopedResource() }
+        let url = directory.appendingPathComponent(Self.vaultFilename)
+        guard FileManager.default.fileExists(atPath: url.path) else { throw VaultStoreError.vaultMissing }
+        let envelope = try coordinateRead(at: url)
+        let plaintext: Data
+        do { plaintext = try VaultCore.decrypt(envelope: envelope, password: masterPassword) }
+        catch { throw VaultStoreError.authenticationFailed }
+        let data = try JSONDecoder().decode(VaultData.self, from: plaintext)
+        let key = try VaultCore.deriveKey(envelope: envelope, password: masterPassword)
+        try persistPairing(in: directory, expectedEnvelope: envelope)
+        try cacheDeviceKey(key)
+        return UnlockedVault(data: data, envelope: envelope, key: key)
+    }
+
+    private func persistPairing(in directory: URL, expectedEnvelope: Data? = nil) throws {
+
         let secret = try randomSecret()
         let marker = PairingMarker(secret: secret)
         let markerData = try JSONEncoder().encode(marker)
         try coordinateWrite(in: directory) { folder in
+            if let expectedEnvelope {
+                guard try Data(contentsOf: folder.appendingPathComponent(Self.vaultFilename)) == expectedEnvelope else { throw VaultStoreError.vaultChanged }
+            } else if FileManager.default.fileExists(atPath: folder.appendingPathComponent(Self.vaultFilename).path) {
+                throw VaultStoreError.vaultAlreadyExists
+            }
             try markerData.write(to: folder.appendingPathComponent(Self.markerFilename), options: .atomic)
         }
         try SharedKeychain.saveShared(secret, account: Self.pairingAccount)
@@ -73,12 +111,12 @@ final class VaultStore {
             do {
                 plaintext = try VaultCore.decrypt(envelope: encrypted, password: masterPassword)
             } catch {
-                throw VaultStoreError.corruptVault
+                throw VaultStoreError.authenticationFailed
             }
             do {
                 let data = try JSONDecoder().decode(VaultData.self, from: plaintext)
                 let key = try VaultCore.deriveKey(envelope: encrypted, password: masterPassword)
-                try SharedKeychain.saveShared(key, account: Self.derivedKeyAccount, accessControl: SharedKeychain.biometricAccessControl())
+                try cacheDeviceKey(key)
                 return UnlockedVault(data: data, envelope: encrypted, key: key)
             } catch {
                 throw VaultStoreError.corruptVault
@@ -90,9 +128,9 @@ final class VaultStore {
         let data = VaultData()
         let plaintext = try JSONEncoder().encode(data)
         let envelope = try VaultCore.encrypt(json: plaintext, password: masterPassword)
-        try writeEnvelope(envelope)
+        try writeEnvelope(envelope, createOnly: true)
         let key = try VaultCore.deriveKey(envelope: envelope, password: masterPassword)
-        try SharedKeychain.saveShared(key, account: Self.derivedKeyAccount, accessControl: SharedKeychain.biometricAccessControl())
+        try cacheDeviceKey(key)
         return UnlockedVault(data: data, envelope: envelope, key: key)
     }
 
@@ -113,19 +151,42 @@ final class VaultStore {
     }
 
     func save(_ data: VaultData, using unlocked: UnlockedVault) throws -> UnlockedVault {
-        let plaintext = try JSONEncoder().encode(data)
-        let envelope = try VaultCore.reencrypt(json: plaintext, existingEnvelope: unlocked.envelope, key: unlocked.key)
-        try writeEnvelope(envelope)
-        return UnlockedVault(data: data, envelope: envelope, key: unlocked.key)
+        let pending = try prepareSave(data, using: unlocked)
+        try persist(pending)
+        return UnlockedVault(data: data, envelope: pending.envelope, key: unlocked.key)
     }
 
-    private func writeEnvelope(_ envelope: Data) throws {
+    func prepareSave(_ data: VaultData, using unlocked: UnlockedVault) throws -> PendingVaultSave {
+        let plaintext = try JSONEncoder().encode(data)
+        let envelope = try VaultCore.reencrypt(json: plaintext, existingEnvelope: unlocked.envelope, key: unlocked.key)
+        return PendingVaultSave(envelope: envelope, originalEnvelope: unlocked.envelope)
+    }
+
+    func persist(_ pending: PendingVaultSave) throws {
+        try writeEnvelope(pending.envelope, expectedEnvelope: pending.originalEnvelope)
+    }
+
+    private func writeEnvelope(_ envelope: Data, expectedEnvelope: Data? = nil, createOnly: Bool = false) throws {
         try withVaultDirectory { directory in
             let vaultURL = directory.appendingPathComponent(Self.vaultFilename)
             try coordinateWrite(in: directory) { _ in
+                if createOnly && FileManager.default.fileExists(atPath: vaultURL.path) { throw VaultStoreError.vaultAlreadyExists }
+                if let expectedEnvelope {
+                    let current = try Data(contentsOf: vaultURL)
+                    // A retry after a successful atomic write is already complete.
+                    if current == envelope { return }
+                    guard current == expectedEnvelope else { throw VaultStoreError.vaultChanged }
+                }
                 try envelope.write(to: vaultURL, options: .atomic)
             }
         }
+    }
+
+    private func cacheDeviceKey(_ key: Data) throws {
+        // A phone without enrolled biometrics can still use its master password.
+        let context = LAContext()
+        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil) else { return }
+        try SharedKeychain.saveShared(key, account: Self.derivedKeyAccount, accessControl: SharedKeychain.biometricAccessControl())
     }
 
     func probe() throws {
