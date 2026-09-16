@@ -28,7 +28,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
     override func prepareCredentialList(for serviceIdentifiers: [ASCredentialServiceIdentifier]) {
         do {
             let vault = try unlockUSB()
-            let items = vault.data.items.filter { $0.itemType == .password }
+            let items = CredentialIdentityIndexer.prioritized(vault.data.items.filter { $0.itemType == .password }, for: serviceIdentifiers)
             show(title: "Choose a login", message: "Select a USB-backed credential.", items: items) { [weak self] item in
                 self?.completePassword(item)
             }
@@ -38,7 +38,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
     override func prepareOneTimeCodeCredentialList(for serviceIdentifiers: [ASCredentialServiceIdentifier]) {
         do {
             let vault = try unlockUSB()
-            let items = vault.data.items.filter(\.hasTOTP)
+            let items = CredentialIdentityIndexer.prioritized(vault.data.items.filter(\.hasTOTP), for: serviceIdentifiers)
             show(title: "Choose a code", message: "Select a rotating code.", items: items) { [weak self] item in
                 self?.completeOTP(item)
             }

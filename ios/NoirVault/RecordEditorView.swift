@@ -25,7 +25,7 @@ struct RecordEditorView: View {
 
     private var hasChanges: Bool {
         if let original { return original != draft || tags != original.tags.joined(separator: ", ") }
-        return !draft.title.isEmpty || !draft.content.isEmpty || !draft.totpSecret.isEmpty || !draft.description.isEmpty || !draft.website.isEmpty || !draft.notes.isEmpty || !tags.isEmpty
+        return !draft.title.isEmpty || !draft.content.isEmpty || !draft.totpSecret.isEmpty || !draft.description.isEmpty || !draft.website.isEmpty || !draft.notes.isEmpty || !tags.isEmpty || draft.isFavorite
     }
 
     var body: some View {
@@ -90,6 +90,9 @@ struct RecordEditorView: View {
                             }
                             Text("\(configuration.digits) digits · every \(configuration.period) seconds · \(configuration.algorithm.rawValue)")
                                 .font(.footnote).foregroundStyle(NoirTheme.muted)
+                        } else if !draft.totpSecret.isEmpty {
+                            Label("This setup key is not valid. Use the full key from the website, or scan its QR code.", systemImage: "exclamationmark.circle")
+                                .font(.footnote).foregroundStyle(.orange)
                         }
                     } header: { Text(draft.itemType == .authenticator ? "Authenticator" : "Authenticator (optional)") }
                     footer: { Text("Use the setup key supplied by the website, not its current six-digit code.") }
@@ -187,6 +190,7 @@ struct RecordEditorView: View {
 
 struct PasswordGeneratorView: View {
     var onUse: ((String) -> Void)? = nil
+    @EnvironmentObject private var session: VaultSession
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var options = PasswordGenerator.Options()
@@ -201,7 +205,7 @@ struct PasswordGeneratorView: View {
                         .frame(maxWidth: .infinity, minHeight: 80, alignment: .leading).contentTransition(.opacity)
                     Button("Generate another", systemImage: "arrow.clockwise") { generate() }
                     Button(copied ? "Copied for 15 seconds" : "Copy password", systemImage: copied ? "checkmark" : "doc.on.doc") {
-                        SecureClipboard.copy(password); copied = true
+                        Task { copied = await session.copySecret(password) }
                     }.disabled(options.groups.isEmpty)
                 }
                 Section("Length") { Stepper("\(options.length) characters", value: $options.length, in: 8...128) }
@@ -230,5 +234,6 @@ struct PasswordGeneratorView: View {
     private func generate() {
         guard let result = PasswordGenerator.make(options: options) else { return }
         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) { password = result; copied = false }
+        session.touch()
     }
 }

@@ -29,17 +29,25 @@ struct RootView: View {
     @State private var pendingError: String?
     @State private var confirmingDiscard = false
     @State private var isRetryingPending = false
+    @State private var pendingConflict = false
+    @State private var recoveryDocument: VaultAttachmentDocument?
 
     var body: some View {
         Group {
             if session.pendingSave != nil {
                 VStack(spacing: 24) {
                     Image(systemName: "externaldrive.badge.exclamationmark").font(.system(size: 54)).foregroundStyle(NoirTheme.violet)
-                    Text("Reconnect to finish saving").font(.title2.bold())
+                    Text(pendingConflict ? "Your USB vault changed" : "Reconnect to finish saving").font(.title2.bold())
                     Text("Your changes are encrypted in memory. Connect the same USB and NoirVault will save them automatically. Keep this app open until saving finishes.")
                         .multilineTextAlignment(.center).foregroundStyle(NoirTheme.muted)
-                    ProgressView("Waiting for your USB…")
+                    if pendingConflict {
+                        Text("Automatic saving stopped to protect the newer vault. Export your pending changes to an empty USB folder before discarding them here.")
+                            .font(.callout).foregroundStyle(NoirTheme.muted)
+                    } else { ProgressView("Waiting for your USB…") }
                     if let pendingError { Text(pendingError).font(.footnote).foregroundStyle(.orange) }
+                    Button("Export encrypted recovery copy", systemImage: "square.and.arrow.up") {
+                        if let pending = session.pendingSave { recoveryDocument = VaultAttachmentDocument(data: pending.envelope) }
+                    }.disabled(isRetryingPending)
                     Button("Discard pending changes", role: .destructive) { confirmingDiscard = true }
                         .disabled(isRetryingPending)
                 }.padding(28)
@@ -92,13 +100,22 @@ struct RootView: View {
             Button("Discard changes", role: .destructive) { session.discardPendingSave(); pendingError = nil }
             Button("Keep waiting", role: .cancel) {}
         } message: { Text("Your existing USB vault will remain unchanged.") }
+        .fileExporter(isPresented: Binding(get: { recoveryDocument != nil }, set: { if !$0 { recoveryDocument = nil } }), document: recoveryDocument, contentType: .data, defaultFilename: "noirvault.vault") { result in
+            recoveryDocument = nil
+            switch result {
+            case .success:
+                errorMessage = "The encrypted recovery copy was exported. It opens with the same master password using Open existing. Pending changes have not been discarded."
+            case .failure(let error): errorMessage = error.localizedDescription
+            }
+        }
         .task(id: session.pendingSave?.id) {
             guard let pending = session.pendingSave else { return }
             pendingError = nil
+            pendingConflict = false
             while !Task.isCancelled {
                 do { try await Task.sleep(for: .seconds(2)) } catch { return }
                 guard !Task.isCancelled, session.pendingSave?.id == pending.id else { return }
-                guard scenePhase == .active, !confirmingDiscard else { continue }
+                guard scenePhase == .active, !confirmingDiscard, recoveryDocument == nil else { continue }
                 isRetryingPending = true
                 do {
                     let vaultStore = store
@@ -111,7 +128,7 @@ struct RootView: View {
                 } catch let error as VaultStoreError {
                     isRetryingPending = false
                     pendingError = error.localizedDescription
-                    if error == .vaultChanged { return }
+                    if error == .vaultChanged { pendingConflict = true; return }
                 } catch { isRetryingPending = false; pendingError = error.localizedDescription }
             }
         }

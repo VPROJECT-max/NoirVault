@@ -7,7 +7,10 @@ struct CredentialProviderView: View {
     let onSelect: (VaultItem) -> Void
     let onCancel: () -> Void
     @State private var query = ""
-    private var filteredItems: [VaultItem] { VaultSearch.items(items, query: query) }
+    private var filteredItems: [VaultItem] {
+        let matchingIDs = Set(VaultSearch.items(items, query: query).map(\.id))
+        return items.filter { matchingIDs.contains($0.id) }
+    }
 
     var body: some View {
         NavigationStack {

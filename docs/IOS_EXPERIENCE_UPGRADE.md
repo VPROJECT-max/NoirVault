@@ -25,9 +25,15 @@ OTP exists only as an optional login field; Save always requires content. No edi
 ## Progress
 
 - Investigation complete; implementation and verification in progress.
+- Implemented standalone authenticator records and indexing; editor with update/favorite/website/notes; separate authenticator browsing, search and sort; configurable generator; shared biometric/clipboard policy; persistent preferences and interruption cover.
+- Added encrypted in-memory pending saves with reconnect retries and stale-envelope protection. Added existing-vault re-enrollment and non-overwriting creation. Unlock/setup derivation now runs off the main thread.
+- First integrated run `35087785899` passed Rust tests, simulator compilation and XCTest; follow-up recovery/rendering run `35088393754` is in progress. Latest passkey corrections and polish still require CI.
+- Added rendered screenshot attachments for vault browsing, authenticator editing/detail, generator, and large text. These are visual evidence, not substitutes for interaction/device tests.
+- Found and corrected the pre-existing passkey COSE curve declaration (P-256 is curve 1, not 2); added encoded-key and signature-verification tests.
 - No completion claim until the above requirements have corresponding evidence. Physical USB and signing-dependent provider behavior require device acceptance; simulator tests alone cannot establish them.
 
 ## References
 
 - https://bitwarden.com/help/bitwarden-authenticator/ — independent authenticator entries, manual/QR creation and account labels.
 - https://developer.apple.com/documentation/swiftui/scenephase/inactive — scene interruption behavior.
+- https://www.w3.org/TR/webauthn-3/ — ES256/EC2 credentials use COSE curve 1 (P-256).

@@ -85,7 +85,7 @@ enum WebAuthn {
         let x = publicKey.subdata(in: 1..<33)
         let y = publicKey.subdata(in: 33..<65)
         data.append(CBOR.map([
-            (.negative(-1), .unsigned(2)), // kty: EC2
+            (.negative(-1), .unsigned(1)), // crv: P-256 (COSE curve 1); ES256 requires this curve
             (.negative(-2), .bytes(x)),
             (.negative(-3), .bytes(y)),
             (.unsigned(1), .unsigned(2)),

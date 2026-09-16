@@ -41,7 +41,7 @@ struct TOTPConfiguration: Equatable {
             guard let algorithm = Algorithm(rawValue: (parameters["algorithm"] ?? "SHA1").uppercased()) else {
                 throw TOTPError.invalidSecret
             }
-            let decodedPath = components.path.removingPercentEncoding ?? components.path
+            let decodedPath = components.path
             let label = String(decodedPath.drop(while: { $0 == "/" }))
             let parts = label.split(separator: ":", maxSplits: 1).map(String.init)
             return TOTPConfiguration(
@@ -69,7 +69,7 @@ struct TOTPConfiguration: Equatable {
         let alphabet = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567")
         let values = Dictionary(uniqueKeysWithValues: alphabet.enumerated().map { ($0.element, $0.offset) })
         let clean = input.uppercased().filter { !$0.isWhitespace && $0 != "-" && $0 != "=" }
-        guard !clean.isEmpty else { throw TOTPError.invalidSecret }
+        guard !clean.isEmpty, [0, 2, 4, 5, 7].contains(clean.count % 8) else { throw TOTPError.invalidSecret }
         var buffer = 0
         var bitCount = 0
         var output = [UInt8]()
@@ -83,7 +83,7 @@ struct TOTPConfiguration: Equatable {
                 buffer &= (1 << bitCount) - 1
             }
         }
-        guard !output.isEmpty else { throw TOTPError.invalidSecret }
+        guard !output.isEmpty, buffer == 0 else { throw TOTPError.invalidSecret }
         return Data(output)
     }
 }

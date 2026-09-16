@@ -3,6 +3,22 @@ import Foundation
 import Security
 
 enum CredentialIdentityIndexer {
+    static func prioritized(_ items: [VaultItem], for services: [ASCredentialServiceIdentifier]) -> [VaultItem] {
+        func host(_ value: String) -> String {
+            let candidate = value.contains("://") ? value : "https://" + value
+            return (URL(string: candidate)?.host ?? value).lowercased()
+        }
+        let requested = services.map { host($0.identifier) }
+        func matches(_ item: VaultItem) -> Bool {
+            let domain = host(item.website.isEmpty ? item.title : item.website)
+            return !domain.isEmpty && requested.contains { $0 == domain || $0.hasSuffix("." + domain) }
+        }
+        return items.sorted {
+            if matches($0) != matches($1) { return matches($0) }
+            return $0.title.localizedStandardCompare($1.title) == .orderedAscending
+        }
+    }
+
     static func passwordIdentity(for item: VaultItem) -> ASPasswordCredentialIdentity {
         ASPasswordCredentialIdentity(
             serviceIdentifier: serviceIdentifier(for: item),

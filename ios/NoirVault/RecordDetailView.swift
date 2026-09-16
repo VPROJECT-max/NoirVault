@@ -3,7 +3,7 @@ import UIKit
 import LocalAuthentication
 import UniformTypeIdentifiers
 
-private struct VaultAttachmentDocument: FileDocument {
+struct VaultAttachmentDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.data] }
     let data: Data
 
@@ -66,11 +66,14 @@ struct RecordDetailView: View {
                         Text("This attachment is encrypted inside your USB vault.")
                             .foregroundStyle(NoirTheme.muted)
                         Button("Export file", systemImage: "square.and.arrow.up") {
-                            guard let data = Data(base64Encoded: item.content) else {
-                                exportError = "The encrypted attachment is corrupted."
-                                return
+                            Task {
+                                guard await session.authorizeSecretAccess() else { return }
+                                guard let data = Data(base64Encoded: item.content) else {
+                                    exportError = "The encrypted attachment is corrupted."
+                                    return
+                                }
+                                exportDocument = VaultAttachmentDocument(data: data)
                             }
-                            exportDocument = VaultAttachmentDocument(data: data)
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(NoirTheme.violet)
@@ -105,6 +108,7 @@ struct RecordDetailView: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(copied ? NoirTheme.mint : NoirTheme.violet)
+                        .foregroundStyle(copied ? NoirTheme.ink : .white)
                     }
                     .noirCard()
                 }

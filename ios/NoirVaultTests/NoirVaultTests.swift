@@ -44,7 +44,7 @@ final class NoirVaultTests: XCTestCase {
         try capture(VaultHomeView(store: VaultStore(), errorMessage: .constant(nil)).environmentObject(session), named: "vault-library")
         try capture(RecordEditorView(type: .authenticator, item: code, onSave: { _ in }).environmentObject(session), named: "authenticator-editor")
         try capture(NavigationStack { RecordDetailView(item: code, onEdit: {}, onFavorite: {}, onDelete: {}) }.environmentObject(session), named: "authenticator-detail")
-        try capture(PasswordGeneratorView(), named: "password-generator")
+        try capture(PasswordGeneratorView().environmentObject(session), named: "password-generator")
         try capture(RecordEditorView(type: .authenticator, item: code, onSave: { _ in }).environmentObject(session).environment(\.dynamicTypeSize, .accessibility2), named: "authenticator-large-text")
     }
 
@@ -107,6 +107,15 @@ final class NoirVaultTests: XCTestCase {
     func testLoginIdentityUsesWebsiteInsteadOfDisplayName() {
         let item = VaultItem(title: "Work account", description: "alice", itemType: .password, content: "secret", website: "https://example.com/login")
         XCTAssertEqual(CredentialIdentityIndexer.passwordIdentity(for: item).serviceIdentifier.identifier, "example.com")
+    }
+
+    func testAutoFillRanksActualDomainBeforeLookalike() {
+        let actual = VaultItem(title: "Z work login", itemType: .password, content: "one", website: "example.com")
+        let lookalike = VaultItem(title: "A other login", itemType: .password, content: "two", website: "notexample.com")
+        let services = [ASCredentialServiceIdentifier(identifier: "https://login.example.com/account", type: .URL)]
+        let ranked = CredentialIdentityIndexer.prioritized([lookalike, actual], for: services)
+        XCTAssertEqual(ranked.first?.id, actual.id)
+        XCTAssertEqual(ranked.count, 2, "Manual selection of another account remains available")
     }
 
     func testWebsiteRejectsNonWebSchemes() {
@@ -277,6 +286,29 @@ final class NoirVaultTests: XCTestCase {
         )
         XCTAssertEqual(data.prefix(32), Data(SHA256.hash(data: Data("example.com".utf8))))
         XCTAssertEqual(data[32] & 0x40, 0x40)
+        // A COSE EC2 key for ES256 must advertise curve 1 (P-256), not curve 2 (P-384).
+        let coseOffset = 37 + 16 + 2 + 32
+        XCTAssertEqual(Array(data[coseOffset..<(coseOffset + 7)]), [0xa5, 0x01, 0x02, 0x03, 0x26, 0x20, 0x01])
+    }
+
+    func testPasskeyAssertionSignatureVerifiesWithRegisteredKey() throws {
+        let registration = try WebAuthn.register(relyingParty: "example.com", userName: "alice", userHandle: Data([1]))
+        let clientHash = Data(repeating: 7, count: 32)
+        let assertion = try WebAuthn.assert(material: registration.material, relyingParty: "example.com", clientDataHash: clientHash)
+        let publicKey = try P256.Signing.PrivateKey(rawRepresentation: registration.material.privateKey).publicKey
+        let signature = try P256.Signing.ECDSASignature(derRepresentation: assertion.signature)
+        XCTAssertTrue(publicKey.isValidSignature(signature, for: assertion.authenticatorData + clientHash))
+        XCTAssertEqual(assertion.updatedMaterial.signCount, 1)
+    }
+
+    func testTOTPRejectsSixDigitCodeAndInvalidTrailingBits() {
+        XCTAssertThrowsError(try TOTPConfiguration.parse("234567"))
+        XCTAssertThrowsError(try TOTPConfiguration.parse("AB"))
+    }
+
+    func testTOTPAccountIsPercentDecodedOnlyOnce() throws {
+        let configuration = try TOTPConfiguration.parse("otpauth://totp/Site:alice%2520smith?secret=JBSWY3DPEHPK3PXP")
+        XCTAssertEqual(configuration.account, "alice%20smith")
     }
 
     func testAssertionRejectsWrongRelyingParty() throws {

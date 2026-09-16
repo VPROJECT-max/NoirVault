@@ -74,7 +74,7 @@ struct VaultHomeView: View {
                     ForEach(filteredItems) { item in
                         VStack(alignment: .leading, spacing: 14) {
                             Button { session.select(item); session.touch() } label: { VaultRow(item: item) }
-                                .buttonStyle(.plain)
+                                .buttonStyle(NoirPressStyle())
                                 .accessibilityIdentifier("vault-row-\(item.id)")
                             if codesOnly, let configuration = item.totpConfiguration {
                                 TOTPCodeView(configuration: configuration)
@@ -106,6 +106,7 @@ struct VaultHomeView: View {
             .searchable(text: $query, prompt: codesOnly ? "Search accounts" : "Search names, accounts, tags")
             .onChange(of: query) { _, _ in session.touch() }
             .onChange(of: codesOnly) { _, _ in session.touch(); query = "" }
+            .sensoryFeedback(.selection, trigger: codesOnly)
             .onScrollPhaseChange { _, phase in if phase != .idle { session.touch() } }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -177,7 +178,12 @@ struct VaultHomeView: View {
             } else { Button("Clear search") { query = "" } }
         }
     }
-    private func edit(_ item: VaultItem) { session.touch(); editor = EditorRequest(type: item.itemType, item: item) }
+    private func edit(_ item: VaultItem) {
+        Task {
+            guard await session.authorizeSecretAccess() else { return }
+            editor = EditorRequest(type: item.itemType, item: item)
+        }
+    }
     private func favorite(_ item: VaultItem) {
         var updated = item; updated.isFavorite.toggle()
         do { try session.upsert(updated, using: store); notify(updated.isFavorite ? "Added to favorites" : "Removed from favorites") }

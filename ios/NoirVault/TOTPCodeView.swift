@@ -52,6 +52,7 @@ struct TOTPCodeView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(copied ? NoirTheme.mint : NoirTheme.violet)
+                .foregroundStyle(copied ? NoirTheme.ink : .white)
             }
         }
         .onChange(of: session.requireBiometricsToCopy) { _, _ in revealed = false }
